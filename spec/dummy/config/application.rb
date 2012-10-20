@@ -8,7 +8,7 @@ require "active_resource/railtie"
 require "sprockets/railtie"
 # require "rails/test_unit/railtie"
 
-Bundler.require
+Bundler.require(:development)
 require "magic_scopes"
 
 module Dummy
@@ -60,6 +60,11 @@ module Dummy
 
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
+
+    config.generators do |g|
+      g.test_framework :rspec
+      g.fixture_replacement :factory_girl, dir: 'spec/factories'
+    end
   end
 end
 
