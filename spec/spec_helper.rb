@@ -1,8 +1,8 @@
-ENV['RAILS_ENV'] = 'test'
+ENV["RAILS_ENV"] ||= 'test'
+require_relative 'dummy/config/environment'
 
-Bundler.require(:development)
+require 'rspec/rails'
 
-require_relative 'dummy/config/environment.rb'
-
-Dir[File.join(File.dirname(__FILE__), '/support/**/*.rb')].each { |f| require f }
-
+RSpec.configure do |config|
+  config.use_transactional_fixtures = true
+end

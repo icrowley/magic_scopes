@@ -11,6 +11,10 @@ class CreateComments < ActiveRecord::Migration
       t.string :state
       t.string :likes_state
 
+      t.boolean :featured
+      t.boolean :hidden
+      t.boolean :best
+
       t.timestamps
     end
   end

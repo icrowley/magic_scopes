@@ -5,13 +5,23 @@ class CreateUsers < ActiveRecord::Migration
       t.string :last_name
       t.string :email
 
-      t.string :gender
-      t.integer :posts_count
+      t.integer :age
+      t.integer :weight
+      t.integer :height
+
+      t.text :about
+
+      t.decimal :dec, precision: 10, scale: 2
+      t.float :rating
+      t.float :floato
+      t.float :floatum
 
       t.boolean :admin
       t.boolean :moderator
 
-      t.timestamps
+      t.date :created_at
+      t.datetime :updated_at
+      t.datetime :last_logged_at
     end
   end
 end
