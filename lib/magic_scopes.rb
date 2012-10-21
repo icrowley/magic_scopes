@@ -4,6 +4,7 @@ require 'magic_scopes/railtie' if defined?(Rails)
 module MagicScopes
 
   class WrongTypeError < StandardError; end;
+  class NoAssociationError < StandardError; end;
 
   extend ActiveSupport::Concern
 
@@ -31,29 +32,83 @@ module MagicScopes
       end
     end
 
-    if defined?(StateMachine)
-      def state_scopes
-        1
+    def string_scopes(*attrs)
+      define_scopes([:string, :text], attrs) do |attr|
+        scope "with_#{attr}",  ->(val)   { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_eq",    ->(val)   { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_ne",    ->(val)   { where("#{table_name}.#{attr} != ?", val) }
+        scope "#{attr}_like",  ->(val)   { where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
+
+        ilike_scope = if connection.adapter_name == 'PostgreSQL'
+          ->(val){ where("#{table_name}.#{attr} ILIKE ?", "%#{val}%") }
+        else
+          ->(val){ where("LOWER(#{table_name}.#{attr}) LIKE ?", "%#{val}%") }
+        end
+        scope "#{attr}_ilike", ilike_scope
       end
     end
 
-    def assoc_scopes
+    def assoc_scopes(*attrs)
+      def parse_attrs(val)
+        if val.is_a?(Fixnum) || val.is_a?(String)
+          val
+        elsif val.is_a?(ActiveRecord::Base)
+          val.id
+        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(Fixnum) }
+          val
+        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(ActiveRecord::Base) }
+          val.map(&:id)
+        else
+          raise ArgumentError, "Wrong argument type #{attr.class.name} for argument #{attr}"
+        end
+      end
 
+      def parse_options(attr, operator, *vals)
+        vals.inject([]) do |conditions, val|
+          parsed_attrs = parse_attrs(val)
+          conditions << if parsed_attrs.is_a?(String)
+            "#{table_name}.#{attr}_type #{operator} '#{parsed_attrs}'"
+          elsif parsed_attrs.is_a?(Fixnum)
+            build_fk_conditions(attr, operator) { |key| "#{key} #{operator} #{parsed_attrs}" }
+          else
+            build_fk_conditions(attr, operator) { |key| "#{key} #{'NOT' if operator == '!='} IN (#{parsed_attrs.join(', ')})" }
+          end
+        end.join(' AND ')
+      end
+
+      def build_fk_conditions(attr, operator, &block)
+        key = "#{table_name}.#{attr.to_s.foreign_key}"
+        fk = yield(key)
+        operator == '!=' ? ("#{fk} OR #{key} IS NULL") : fk
+      end
+
+      attrs = reflections.keys if attrs.empty?
+      attrs.each do |attr|
+        if reflection = reflections[attr.to_sym]
+          if reflection.options[:polymorphic]
+            scope "for_#{attr}",     ->(*vals) { where(parse_options(attr, '=', *vals)) }
+            scope "not_for_#{attr}", ->(*vals) { where(parse_options(attr, '!=', *vals)) }
+          else
+            scope "for_#{attr}",     ->(val) { where("#{table_name}.#{attr.to_s.foreign_key}" => parse_attrs(val)) }
+            scope "not_for_#{attr}", ->(val) {
+              parsed_attrs = parse_attrs(val)
+              conditions = if parsed_attrs.is_a?(Array)
+                "NOT IN (#{parsed_attrs.join(', ')})"
+              else
+                "!= #{parsed_attrs}"
+              end
+              key = "#{table_name}.#{attr.to_s.foreign_key}"
+              where("#{key} #{conditions} OR #{key} IS NULL")
+            }
+          end
+        else
+          raise NoAssociationError, "No association for argument #{attr}"
+        end
+      end
     end
 
-    def string_scopes(*attrs)
-      define_scopes([:string, :text], attrs) do |attr|
-        scope "with_#{attr}",  ->(val){ where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_eq",    ->(val){ where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_like",  ->(val){ where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
-        scope "#{attr}_ne",    ->(val){ where("#{table_name}.#{attr} != ?", val) }
-
-        ilike_scope = if connection.adapter_name == 'PostgreSQL'
-            ->(val){ where("#{table_name}.#{attr} ILIKE ?", "%#{val}%") }
-          else
-            ->(val){ where("LOWER(#{table_name}.#{attr}) LIKE ?", "%#{val}%") }
-          end
-        scope "#{attr}_ilike", ilike_scope
+    if defined?(StateMachine)
+      def state_scopes
       end
     end
 
@@ -69,13 +124,13 @@ module MagicScopes
 
     def num_time_scopes(types, attrs)
       define_scopes(types, attrs) do |attr|
-        scope "with_#{attr}", ->(val){ where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_eq",   ->(val){ where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_gt",   ->(val){ where("#{table_name}.#{attr} > ?", val)  }
-        scope "#{attr}_lt",   ->(val){ where("#{table_name}.#{attr} < ?", val)  }
-        scope "#{attr}_gte",  ->(val){ where("#{table_name}.#{attr} >= ?", val) }
-        scope "#{attr}_lte",  ->(val){ where("#{table_name}.#{attr} <= ?", val) }
-        scope "#{attr}_ne",   ->(val){ where("#{table_name}.#{attr} != ?", val) }
+        scope "with_#{attr}", ->(val)   { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_eq",   ->(val)   { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_gt",   ->(val)   { where("#{table_name}.#{attr} > ?", val) }
+        scope "#{attr}_lt",   ->(val)   { where("#{table_name}.#{attr} < ?", val) }
+        scope "#{attr}_gte",  ->(val)   { where("#{table_name}.#{attr} >= ?", val) }
+        scope "#{attr}_lte",  ->(val)   { where("#{table_name}.#{attr} <= ?", val) }
+        scope "#{attr}_ne",   ->(val)   { where("#{table_name}.#{attr} != ?", val) }
       end
     end
 

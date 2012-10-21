@@ -4,8 +4,8 @@ class CreateComments < ActiveRecord::Migration
       t.string :title
       t.text :content
 
-      t.references :user_id
-      t.references :parent_id
+      t.references :user
+      t.references :next
       t.references :commentable, polymorphic: true
 
       t.string :state

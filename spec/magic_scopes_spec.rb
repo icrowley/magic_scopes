@@ -13,8 +13,6 @@ describe MagicScopes do
   describe ".define_scopes" do
     subject { Comment }
 
-    before { subject.boolean_scopes(:featured, :hidden) }
-
     it "raises an error when argument is not of needed type" do
       expect { subject.boolean_scopes(:state) }.to raise_error(MagicScopes::WrongTypeError)
     end

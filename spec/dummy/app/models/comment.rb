@@ -2,6 +2,10 @@ class Comment < ActiveRecord::Base
 
   attr_protected
 
+  belongs_to :user
+  belongs_to :parent, class_name: 'User'
+  belongs_to :commentable, polymorphic: true
+
   state_machine :state, initial: :pending do
     event :accept do
       transition any => :accepted
