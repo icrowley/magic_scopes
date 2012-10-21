@@ -12,6 +12,7 @@ describe MagicScopes do
         it { should respond_to("#{scope}_eq") }
         it { should respond_to("#{scope}_like") }
         it { should respond_to("#{scope}_ilike") }
+        it { should respond_to("#{scope}_ne") }
       end
       it { should_not respond_to(:height) }
     end
@@ -72,6 +73,10 @@ describe MagicScopes do
 
         it "returns 2 for ilike" do
           subject.about_ilike('lorem').count.should == 2
+        end
+
+        it "returns 1 for ne" do
+          subject.about_ne('Lorem Ipsum').count.should == 1
         end
       end
     end

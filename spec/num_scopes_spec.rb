@@ -13,6 +13,7 @@ describe MagicScopes do
         it { should respond_to("#{scope}_lt") }
         it { should respond_to("#{scope}_gte") }
         it { should respond_to("#{scope}_lte") }
+        it { should respond_to("#{scope}_ne") }
       end
       it { should_not respond_to(:height) }
     end
@@ -62,6 +63,10 @@ describe MagicScopes do
 
       it "returns 3 for gte" do
         subject.age_gte(2).count.should == 3
+      end
+
+      it "returns 3 for ne" do
+        subject.age_ne(2).count.should == 3
       end
     end
   end

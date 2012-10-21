@@ -46,6 +46,8 @@ module MagicScopes
         scope "with_#{attr}",  ->(val){ where("#{table_name}.#{attr}" => val) }
         scope "#{attr}_eq",    ->(val){ where("#{table_name}.#{attr}" => val) }
         scope "#{attr}_like",  ->(val){ where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
+        scope "#{attr}_ne",    ->(val){ where("#{table_name}.#{attr} != ?", val) }
+
         ilike_scope = if connection.adapter_name == 'PostgreSQL'
             ->(val){ where("#{table_name}.#{attr} ILIKE ?", "%#{val}%") }
           else
@@ -73,6 +75,7 @@ module MagicScopes
         scope "#{attr}_lt",   ->(val){ where("#{table_name}.#{attr} < ?", val)  }
         scope "#{attr}_gte",  ->(val){ where("#{table_name}.#{attr} >= ?", val) }
         scope "#{attr}_lte",  ->(val){ where("#{table_name}.#{attr} <= ?", val) }
+        scope "#{attr}_ne",   ->(val){ where("#{table_name}.#{attr} != ?", val) }
       end
     end
 

@@ -13,6 +13,7 @@ describe MagicScopes do
         it { should respond_to("#{scope}_lt") }
         it { should respond_to("#{scope}_gte") }
         it { should respond_to("#{scope}_lte") }
+        it { should respond_to("#{scope}_ne") }
       end
       it { should_not respond_to(:last_logged_at) }
     end
@@ -65,6 +66,10 @@ describe MagicScopes do
 
       it "returns 3 for gte" do
         subject.last_logged_at_gte(today).count.should == 3
+      end
+
+      it "returns 3 for gte" do
+        subject.last_logged_at_ne(today).count.should == 3
       end
     end
   end
