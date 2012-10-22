@@ -3,8 +3,9 @@ require 'magic_scopes/railtie' if defined?(Rails)
 
 module MagicScopes
 
-  class WrongTypeError < StandardError; end;
-  class NoAssociationError < StandardError; end;
+  class WrongTypeError < StandardError; end
+  class NoAssociationError < StandardError; end
+  class NoStateMachineError < StandardError; end
 
   extend ActiveSupport::Concern
 
@@ -37,7 +38,7 @@ module MagicScopes
         scope "with_#{attr}",  ->(val) { where("#{table_name}.#{attr}" => val) }
         scope "#{attr}_eq",    ->(val) { where("#{table_name}.#{attr}" => val) }
         scope "#{attr}_ne",    ->(val) {
-          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?')
+          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?') << " OR #{table_name}.#{attr} IS NULL"
           where(sql, val)
         }
         scope "#{attr}_like",  ->(val) { where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
@@ -105,13 +106,25 @@ module MagicScopes
             }
           end
         else
-          raise NoAssociationError, "No association for argument #{attr}"
+          raise NoAssociationError, "No association for attribute #{attr}"
         end
       end
     end
 
     if defined?(StateMachine)
-      def state_scopes
+      def state_scopes(*attrs)
+        attrs = state_machines.keys if attrs.empty?
+        attrs.each do |attr|
+          if sm = state_machines[attr]
+            sm.states.map(&:name).each do |state|
+              state = "no_#{attr}" if state.nil?
+              scope state,          where("#{table_name}.#{attr}" => state)
+              scope "not_#{state}", where("#{table_name}.#{attr} != ? OR #{table_name}.#{attr} IS NULL", state)
+            end
+          else
+            raise NoStateMachineError, "No state machine for attribute #{attr}"
+          end
+        end
       end
     end
 
@@ -134,7 +147,7 @@ module MagicScopes
         scope "#{attr}_gte",  ->(val) { where("#{table_name}.#{attr} >= ?", val) }
         scope "#{attr}_lte",  ->(val) { where("#{table_name}.#{attr} <= ?", val) }
         scope "#{attr}_ne",   ->(val) {
-          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?")
+          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?") << " OR #{table_name}.#{attr} IS NULL"
           where(sql, val)
         }
       end

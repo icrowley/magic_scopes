@@ -16,13 +16,13 @@ class Comment < ActiveRecord::Base
     end
   end
 
-  state_machine :likes_state, initial: :ok do
+  state_machine :likes_state do
     event :like do
-      transition ok: :liked
+      transition any => :liked
     end
 
     event :dislike do
-      transition ok: :disliked
+      transition any => :disliked
     end
   end
 end
