@@ -68,8 +68,12 @@ describe MagicScopes do
         subject.last_logged_at_gte(today).count.should == 3
       end
 
-      it "returns 3 for gte" do
+      it "returns 3 for ne" do
         subject.last_logged_at_ne(today).count.should == 3
+      end
+
+      it "returns for ne with array" do
+        subject.last_logged_at_ne([today, today.tomorrow]).count.should == 2
       end
     end
   end

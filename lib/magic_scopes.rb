@@ -34,10 +34,13 @@ module MagicScopes
 
     def string_scopes(*attrs)
       define_scopes([:string, :text], attrs) do |attr|
-        scope "with_#{attr}",  ->(val)   { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_eq",    ->(val)   { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_ne",    ->(val)   { where("#{table_name}.#{attr} != ?", val) }
-        scope "#{attr}_like",  ->(val)   { where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
+        scope "with_#{attr}",  ->(val) { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_eq",    ->(val) { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_ne",    ->(val) {
+          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?')
+          where(sql, val)
+        }
+        scope "#{attr}_like",  ->(val) { where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
 
         ilike_scope = if connection.adapter_name == 'PostgreSQL'
           ->(val){ where("#{table_name}.#{attr} ILIKE ?", "%#{val}%") }
@@ -124,13 +127,16 @@ module MagicScopes
 
     def num_time_scopes(types, attrs)
       define_scopes(types, attrs) do |attr|
-        scope "with_#{attr}", ->(val)   { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_eq",   ->(val)   { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_gt",   ->(val)   { where("#{table_name}.#{attr} > ?", val) }
-        scope "#{attr}_lt",   ->(val)   { where("#{table_name}.#{attr} < ?", val) }
-        scope "#{attr}_gte",  ->(val)   { where("#{table_name}.#{attr} >= ?", val) }
-        scope "#{attr}_lte",  ->(val)   { where("#{table_name}.#{attr} <= ?", val) }
-        scope "#{attr}_ne",   ->(val)   { where("#{table_name}.#{attr} != ?", val) }
+        scope "with_#{attr}", ->(val) { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_eq",   ->(val) { where("#{table_name}.#{attr}" => val) }
+        scope "#{attr}_gt",   ->(val) { where("#{table_name}.#{attr} > ?", val) }
+        scope "#{attr}_lt",   ->(val) { where("#{table_name}.#{attr} < ?", val) }
+        scope "#{attr}_gte",  ->(val) { where("#{table_name}.#{attr} >= ?", val) }
+        scope "#{attr}_lte",  ->(val) { where("#{table_name}.#{attr} <= ?", val) }
+        scope "#{attr}_ne",   ->(val) {
+          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?")
+          where(sql, val)
+        }
       end
     end
 

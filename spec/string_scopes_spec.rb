@@ -78,6 +78,11 @@ describe MagicScopes do
         it "returns 1 for ne" do
           subject.about_ne('Lorem Ipsum').count.should == 1
         end
+
+        it "returns 1 for ne with array" do
+          User.create(about: 'bogus')
+          subject.about_ne(['Lorem Ipsum', 'bogus']).count.should == 1
+        end
       end
     end
   end

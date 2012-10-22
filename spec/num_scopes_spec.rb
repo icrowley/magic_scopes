@@ -45,6 +45,10 @@ describe MagicScopes do
         subject.with_age(2).count.should == 1
       end
 
+      it "returns 2 for age with array" do
+        subject.with_age([2, 3]).count.should == 2
+      end
+
       it "returns 1 for eq" do
         subject.age_eq(2).count.should == 1
       end
@@ -67,6 +71,10 @@ describe MagicScopes do
 
       it "returns 3 for ne" do
         subject.age_ne(2).count.should == 3
+      end
+
+      it "returns 2 for ne with array" do
+        subject.age_ne([2, 4]).count.should == 2
       end
     end
   end
