@@ -117,7 +117,7 @@ module MagicScopes
         attrs.each do |attr|
           if sm = state_machines[attr]
             sm.states.map(&:name).each do |state|
-              state = "no_#{attr}" if state.nil?
+              state = "nil_#{attr}" if state.nil?
               scope state,          where("#{table_name}.#{attr}" => state)
               scope "not_#{state}", where("#{table_name}.#{attr} != ? OR #{table_name}.#{attr} IS NULL", state)
             end
@@ -134,6 +134,8 @@ module MagicScopes
       time_scopes
       float_scopes
       string_scopes
+      assoc_scopes
+      state_scopes if defined?(StateMachine)
     end
 
     private
@@ -153,12 +155,24 @@ module MagicScopes
       end
     end
 
+    def reflections_for?(attr)
+      !!reflections[attr.to_s.sub(/_(id|type)$/, '').to_sym]
+    end
+
     def define_scopes(types, attrs, &block)
       types = Array.wrap(types)
-      attrs = columns_hash.inject([]) { |ar, (attr, meta)| ar << attr if meta.type.in?(types); ar } if attrs.empty?
+      attrs = columns_hash.inject([]) do |ar, (attr, meta)|
+        ar << attr if meta.type.in?(types) && !reflections_for?(attr) && (!defined?(StateMachine) || !state_machines[attr.to_sym])
+        ar
+      end if attrs.empty?
+
       attrs.each do |attr|
         begin
-          if (type = columns_hash[attr.to_s].type).in?(types)
+          if defined?(StateMachine) && state_machines[attr.to_sym]
+            raise ArgumentError, "State machine column #{attr} used for value scope"
+          elsif reflections_for?(attr)
+            raise ArgumentError, "Association column #{attr} used for value scope"
+          elsif (type = columns_hash[attr.to_s].type).in?(types)
             yield(attr)
           else
             raise WrongTypeError, "Wrong type #{type} for argument #{attr}"

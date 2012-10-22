@@ -32,6 +32,9 @@ describe MagicScopes do
           should_not respond_to("with_#{attr}")
         end
       end
+
+      it { should_not respond_to(:commentable_type_like) }
+      it { should_not respond_to(:state_like) }
     end
 
     describe "fetching" do

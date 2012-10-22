@@ -1,3 +1,16 @@
 class User < ActiveRecord::Base
   attr_protected
+
+  belongs_to :parent
+  belongs_to :specable, polymorphic: true
+
+  state_machine :state, initial: :pending do
+    event :accept do
+      transition any => :accepted
+    end
+
+    event :refuse do
+      transition any => :refused
+    end
+  end
 end

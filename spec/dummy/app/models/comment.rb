@@ -5,6 +5,7 @@ class Comment < ActiveRecord::Base
   belongs_to :user
   belongs_to :parent, class_name: 'User'
   belongs_to :commentable, polymorphic: true
+  belongs_to :next
 
   state_machine :state, initial: :pending do
     event :accept do

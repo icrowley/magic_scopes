@@ -29,7 +29,7 @@ describe MagicScopes do
       end
 
       it "does not define num scopes with non num column types" do
-        %w(moderator about created_at last_name rating).each do |attr|
+        %w(parent_id testable_id moderator about created_at last_name rating).each do |attr|
           should_not respond_to("with_#{attr}")
         end
       end

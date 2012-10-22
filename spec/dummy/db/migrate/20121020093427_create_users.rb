@@ -11,6 +11,11 @@ class CreateUsers < ActiveRecord::Migration
 
       t.text :about
 
+      t.references :parent
+      t.references :specable, polymorphic: true
+
+      t.string :state
+
       t.decimal :dec, precision: 10, scale: 2
       t.float :rating
       t.float :floato
