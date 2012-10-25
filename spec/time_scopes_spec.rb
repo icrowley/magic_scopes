@@ -8,6 +8,7 @@ describe MagicScopes do
       before { subject.time_scopes(:created_at, :updated_at) }
       %w(created_at updated_at).each do |scope|
         it { should respond_to("with_#{scope}") }
+        it { should respond_to("without_#{scope}") }
         it { should respond_to("#{scope}_eq") }
         it { should respond_to("#{scope}_gt") }
         it { should respond_to("#{scope}_lt") }
@@ -77,6 +78,18 @@ describe MagicScopes do
 
       it "returns for ne with array" do
         subject.last_logged_at_ne([today, today.tomorrow]).count.should == 2
+      end
+
+      describe "with/without" do
+        before { User.create }
+
+        it "returns 4 for with" do
+          subject.with_last_logged_at.count.should == 4
+        end
+
+        it "returns 1 for without" do
+          subject.without_last_logged_at.count.should == 1
+        end
       end
     end
 

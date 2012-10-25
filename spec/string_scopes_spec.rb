@@ -9,6 +9,7 @@ describe MagicScopes do
       before { subject.string_scopes(:email, :about) }
       %w(email about).each do |scope|
         it { should respond_to("with_#{scope}") }
+        it { should respond_to("without_#{scope}") }
         it { should respond_to("#{scope}_eq") }
         it { should respond_to("#{scope}_like") }
         it { should respond_to("#{scope}_ilike") }
@@ -65,7 +66,7 @@ describe MagicScopes do
         before do
           User.create(about: 'Lorem Ipsum')
           User.create(about: 'lorem ipsum')
-          subject.string_scopes(:email)
+          subject.string_scopes(:about)
         end
 
         it "returns 1 for exact search" do
@@ -93,6 +94,18 @@ describe MagicScopes do
           before { User.create(about: 'bogus') }
           it { subject.about_eq(:bogus).count.should == 1 }
           it { subject.about_ne(:bogus).count.should == 2 }
+        end
+
+        describe "with/without" do
+          before { User.create }
+
+          it "returns 2 for with" do
+            subject.with_about.count.should == 2
+          end
+
+          it "returns 1 for without" do
+            subject.without_about.count.should == 1
+          end
         end
       end
     end

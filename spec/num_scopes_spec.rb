@@ -8,6 +8,7 @@ describe MagicScopes do
       before { subject.num_scopes(:age, :weight) }
       %w(age weight).each do |scope|
         it { should respond_to("with_#{scope}") }
+        it { should respond_to("without_#{scope}") }
         it { should respond_to("#{scope}_eq") }
         it { should respond_to("#{scope}_gt") }
         it { should respond_to("#{scope}_lt") }
@@ -86,12 +87,24 @@ describe MagicScopes do
         subject.num_scopes(:age)
       end
 
-      it "properly sorts acs" do
+      it "properly sorts asc" do
         subject.by_age.map(&:age).should == [1,2,4,5]
       end
 
       it "properly sorts desc" do
         subject.by_age_desc.map(&:age).should == [5,4,2,1]
+      end
+
+      describe "with/without" do
+        before { User.create }
+
+        it "returns 4 for with" do
+          subject.with_age.count.should == 4
+        end
+
+        it "returns 1 for without" do
+          subject.without_age.count.should == 1
+        end
       end
     end
   end

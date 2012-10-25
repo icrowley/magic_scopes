@@ -8,6 +8,11 @@ describe MagicScopes do
 
       before { subject.state_scopes(:state) }
 
+      %w(state likes_state).each do |scope|
+        it { should respond_to("with_#{scope}") }
+        it { should respond_to("without_#{scope}") }
+      end
+
       Comment.state_machines[:state].states.map(&:name).each do |scope|
         it { should respond_to(scope) }
         it { should respond_to("not_#{scope}") }
@@ -72,6 +77,16 @@ describe MagicScopes do
 
         it "returns 2 for not liked" do
           subject.not_liked.count.should == 2
+        end
+
+        describe "with/without" do
+          it "returns 2 for with" do
+            subject.with_likes_state.count.should == 2
+          end
+
+          it "returns 1 for without" do
+            subject.without_likes_state.count.should == 1
+          end
         end
       end
     end

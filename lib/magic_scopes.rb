@@ -16,8 +16,8 @@ module MagicScopes
     end
 
     def desc_scope
-      scope :desc,   order("id DESC")
-      scope :recent, order("id DESC")
+      scope :desc,   order('id DESC')
+      scope :recent, order('id DESC')
     end
     alias :recent_scope :desc_scope
 
@@ -33,8 +33,11 @@ module MagicScopes
 
     def boolean_scopes(*attrs)
       define_scopes(:boolean, attrs) do |attr|
-        scope attr,          where("#{table_name}.#{attr}" => true)
-        scope "not_#{attr}", where("#{table_name}.#{attr}" => [false, nil])
+        key = "#{table_name}.#{attr}"
+        scope attr,              where("#{key}" => true)
+        scope "not_#{attr}",     where("#{key}" => [false, nil])
+        scope "with_#{attr}",    where("#{key} IS NOT NULL")
+        scope "without_#{attr}", where("#{key} IS NULL")
       end
     end
 
@@ -49,7 +52,8 @@ module MagicScopes
     def num_time_scopes(types, attrs)
       define_scopes(types, attrs) do |attr|
         key = "#{table_name}.#{attr}"
-        scope "with_#{attr}", ->(val) { where(key => val) }
+        scope "with_#{attr}", ->(val = nil) { val.nil? ? where("#{key} IS NOT NULL") : where(key => val) }
+        scope "without_#{attr}", where("#{key} IS NULL")
         scope "#{attr}_eq",   ->(val) { where(key => val) }
         scope "#{attr}_gt",   ->(val) { where("#{key} > ?", val) }
         scope "#{attr}_lt",   ->(val) { where("#{key} < ?", val) }
@@ -59,25 +63,29 @@ module MagicScopes
           sql = "#{key} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?") << " OR #{key} IS NULL"
           where(sql, val)
         }
-        scope "by_#{attr}",      order("#{attr} ASC")
-        scope "by_#{attr}_desc", order("#{attr} DESC")
+        scope "by_#{attr}",      order("#{key} ASC")
+        scope "by_#{attr}_desc", order("#{key} DESC")
       end
     end
     private :num_time_scopes
 
     def float_scopes(*attrs)
       define_scopes(:float, attrs) do |attr|
-        scope "#{attr}_gt", ->(val){ where("#{table_name}.#{attr} > ?", val) }
-        scope "#{attr}_lt", ->(val){ where("#{table_name}.#{attr} < ?", val) }
+        key = "#{table_name}.#{attr}"
+        scope "#{attr}_gt", ->(val){ where("#{key} > ?", val) }
+        scope "#{attr}_lt", ->(val){ where("#{key} < ?", val) }
         scope "by_#{attr}",      order("#{attr} ASC")
         scope "by_#{attr}_desc", order("#{attr} DESC")
+        scope "with_#{attr}",    where("#{key} IS NOT NULL")
+        scope "without_#{attr}", where("#{key} IS NULL")
       end
     end
 
     def string_scopes(*attrs)
       define_scopes([:string, :text], attrs) do |attr|
         key = "#{table_name}.#{attr}"
-        scope "with_#{attr}",  ->(val) { where(key => val) }
+        scope "with_#{attr}",  ->(val = nil) { val.nil? ? where("#{key} IS NOT NULL") : where(key => val) }
+        scope "without_#{attr}", where("#{key} IS NULL")
         scope "#{attr}_eq",    ->(val) { where(key => val) }
         scope "#{attr}_ne",    ->(val) {
           sql = "#{key} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?') << " OR #{key} IS NULL"
@@ -162,9 +170,12 @@ module MagicScopes
         attrs.each do |attr|
           if sm = state_machines[attr]
             sm.states.map(&:name).each do |state|
+              key = "#{table_name}.#{attr}"
               state = "nil_#{attr}" if state.nil?
-              scope state,          where("#{table_name}.#{attr}" => state)
-              scope "not_#{state}", where("#{table_name}.#{attr} != ? OR #{table_name}.#{attr} IS NULL", state)
+              scope state,          where("#{key}" => state)
+              scope "not_#{state}", where("#{key} != ? OR #{table_name}.#{attr} IS NULL", state)
+              scope "with_#{attr}",    where("#{key} IS NOT NULL")
+              scope "without_#{attr}", where("#{key} IS NULL")
             end
           else
             raise NoStateMachineError, "No state machine for attribute #{attr}"
