@@ -52,6 +52,31 @@ describe MagicScopes do
           subject.for_user(user.id).count.should == 1
         end
 
+        context "with multiple models" do
+          let(:user2) { User.create }
+          before { Comment.create(user_id: user2.id) }
+
+          it "accepts multiple arguments" do
+            subject.for_user(user, user2.id).count.should == 2
+          end
+
+          it "accepts multiple arguments for negative scope" do
+            subject.not_for_user(user, user2.id).count.should == 2
+          end
+
+          it "accepts arrays with user ids" do
+            subject.for_user([user.id, user2.id]).count.should == 2
+          end
+
+          it "accepts arrays with user instances" do
+            subject.for_user([user, user2]).count.should == 2
+          end
+
+          it "accepts arrays with user instances and user ids" do
+            subject.for_user([user, user2.id, '3']).count.should == 2
+          end
+        end
+
         it "returns 2 for non user instance" do
           subject.not_for_user(user).count.should == 2
         end
@@ -65,15 +90,28 @@ describe MagicScopes do
         before do
           Comment.create(commentable: user)
           2.times { Comment.create }
-          subject.assoc_scopes(:user)
+          subject.assoc_scopes(:commentable)
         end
 
         it "returns 1 for user instance" do
           subject.for_commentable(user).count.should == 1
         end
 
-        it "returns 1 for user id" do
-          subject.for_commentable(user.id).count.should == 1
+        context "with multiple models" do
+          let(:user2) { User.create }
+          before { Comment.create(commentable: user2) }
+
+          it "accepts multiple arguments" do
+            subject.for_commentable(user, id: user2.id, type: user2.class.name).count.should == 2
+          end
+
+          it "accepts multiple arguments for negative scope" do
+            subject.not_for_commentable(user, id: user2.id, type: user2.class.name).count.should == 2
+          end
+
+          it "accepts arrays with user instances" do
+            subject.for_commentable([user, user2]).count.should == 2
+          end
         end
 
         it "returns 2 for non user instance" do
@@ -81,15 +119,7 @@ describe MagicScopes do
         end
 
         it "returns 1 for user id and type" do
-          subject.for_commentable(user.id, user.class.name).count.should == 1
-        end
-
-        it "returns 1 for user id" do
-          subject.for_commentable(user.id).count.should == 1
-        end
-
-        it "returns 1 for user type" do
-          subject.for_commentable(user.class.name).count.should == 1
+          subject.for_commentable(id: user.id, type: user.class.name).count.should == 1
         end
       end
     end

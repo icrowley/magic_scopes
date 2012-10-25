@@ -52,6 +52,14 @@ describe MagicScopes do
         subject.with_age([2, 3]).count.should == 2
       end
 
+      it "accepts multiple arguments" do
+        subject.with_age(2, 3).count.should == 2
+      end
+
+      it "accepts multiple arguments for negative scope" do
+        subject.age_ne(1, 2, 3).count.should == 1
+      end
+
       it "returns 1 for eq" do
         subject.age_eq(2).count.should == 1
       end

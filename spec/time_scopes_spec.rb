@@ -52,6 +52,14 @@ describe MagicScopes do
         subject.with_last_logged_at(today).count.should == 1
       end
 
+      it "accepts multiple arguments" do
+        subject.with_last_logged_at(today, today + 1.day).count.should == 2
+      end
+
+      it "accepts multiple arguments for negative scope" do
+        subject.last_logged_at_ne(today, today + 1.day, today - 1.day).count.should == 1
+      end
+
       it "returns 1 for eq" do
         subject.last_logged_at_eq(today).count.should == 1
       end

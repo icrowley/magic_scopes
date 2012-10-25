@@ -52,16 +52,17 @@ module MagicScopes
     def num_time_scopes(types, attrs)
       define_scopes(types, attrs) do |attr|
         key = "#{table_name}.#{attr}"
-        scope "with_#{attr}", ->(val = nil) { val.nil? ? where("#{key} IS NOT NULL") : where(key => val) }
+        scope "with_#{attr}", ->(*vals) { vals.empty? ? where("#{key} IS NOT NULL") : where(key => vals.flatten) }
         scope "without_#{attr}", where("#{key} IS NULL")
         scope "#{attr}_eq",   ->(val) { where(key => val) }
         scope "#{attr}_gt",   ->(val) { where("#{key} > ?", val) }
         scope "#{attr}_lt",   ->(val) { where("#{key} < ?", val) }
         scope "#{attr}_gte",  ->(val) { where("#{key} >= ?", val) }
         scope "#{attr}_lte",  ->(val) { where("#{key} <= ?", val) }
-        scope "#{attr}_ne",   ->(val) {
-          sql = "#{key} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?") << " OR #{key} IS NULL"
-          where(sql, val)
+        scope "#{attr}_ne",   ->(*vals) {
+          raise ArgumentError, "No argument for for_#{attr} scope" if vals.empty?
+          sql = "#{key} " << (vals.size == 1 && !vals[0].is_a?(Array) ? "!= ?" : "NOT IN (?)") << " OR #{key} IS NULL"
+          where(sql, vals.flatten)
         }
         scope "by_#{attr}",      order("#{key} ASC")
         scope "by_#{attr}_desc", order("#{key} DESC")
@@ -84,12 +85,14 @@ module MagicScopes
     def string_scopes(*attrs)
       define_scopes([:string, :text], attrs) do |attr|
         key = "#{table_name}.#{attr}"
-        scope "with_#{attr}",  ->(val = nil) { val.nil? ? where("#{key} IS NOT NULL") : where(key => val) }
+        eq_scope = ->(*vals) { vals.empty? ? where("#{key} IS NOT NULL") : where(key => vals.flatten) }
+        scope "with_#{attr}",    eq_scope
         scope "without_#{attr}", where("#{key} IS NULL")
-        scope "#{attr}_eq",    ->(val) { where(key => val) }
-        scope "#{attr}_ne",    ->(val) {
-          sql = "#{key} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?') << " OR #{key} IS NULL"
-          where(sql, val)
+        scope "#{attr}_eq",      eq_scope
+        scope "#{attr}_ne",    ->(*vals) {
+          raise ArgumentError, "No argument for for_#{attr} scope" if vals.empty?
+          sql = "#{key} " << (vals.size == 1 && !vals[0].is_a?(Array) ? '!= ?' : 'NOT IN (?)') << " OR #{key} IS NULL"
+          where(sql, vals.flatten)
         }
         scope "#{attr}_like",  ->(val) { where("#{key} LIKE ?", "%#{val}%") }
 
@@ -106,56 +109,61 @@ module MagicScopes
     end
 
     def assoc_scopes(*attrs)
-      def parse_attrs(val)
-        if val.is_a?(Fixnum) || val.is_a?(String)
+      def extract_ids(val, attr)
+        if val.is_a?(Fixnum) || (val.is_a?(String) && val.to_i != 0)
           val
         elsif val.is_a?(ActiveRecord::Base)
           val.id
-        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(Fixnum) }
-          val
-        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(ActiveRecord::Base) }
-          val.map(&:id)
+        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(Fixnum) || (v.is_a?(String) && v.to_i != 0) || v.is_a?(ActiveRecord::Base) }
+          val.is_a?(ActiveRecord::Base) ? val.map(&:id) : val
         else
           raise ArgumentError, "Wrong argument type #{attr.class.name} for argument #{attr}"
         end
       end
 
-      def parse_options(attr, operator, *vals)
-        vals.inject([]) do |conditions, val|
-          parsed_attrs = parse_attrs(val)
-          conditions << if parsed_attrs.is_a?(String)
-            "#{table_name}.#{attr}_type #{operator} '#{parsed_attrs}'"
-          elsif parsed_attrs.is_a?(Fixnum)
-            build_fk_conditions(attr, operator) { |key| "#{key} #{operator} #{parsed_attrs}" }
-          else
-            build_fk_conditions(attr, operator) { |key| "#{key} #{'NOT' if operator == '!='} IN (#{parsed_attrs.join(', ')})" }
-          end
-        end.join(' AND ')
-      end
-
-      def build_fk_conditions(attr, operator, &block)
-        key = "#{table_name}.#{attr.to_s.foreign_key}"
-        fk = yield(key)
-        operator == '!=' ? ("#{fk} OR #{key} IS NULL") : fk
+      def extract_ids_and_types(val, attr)
+        if val.is_a?(ActiveRecord::Base)
+          {id: val.id, type: val.class.name}
+        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(ActiveRecord::Base) }
+          val.map { |v| {id: v.id, type: v.class.name} }
+        elsif val.is_a?(Hash) && val.assert_valid_keys(:id, :type)
+          val
+        elsif val.is_a?(Array) && val.size == 2 && id = val.find { |v| v.to_i != 0 }
+          val.delete(id)
+          {id: id, type: val[0]}
+        else
+          raise ArgumentError, "Wrong argument type #{attr.class.name} for argument #{attr}"
+        end
       end
 
       attrs = reflections.keys if attrs.empty?
       attrs.each do |attr|
         if reflection = reflections[attr.to_sym]
+          key = "#{table_name}.#{attr.to_s.foreign_key}"
           if reflection.options[:polymorphic]
-            scope "for_#{attr}",     ->(*vals) { where(parse_options(attr, '=', *vals)) }
-            scope "not_for_#{attr}", ->(*vals) { where(parse_options(attr, '!=', *vals)) }
+            type_key = "#{table_name}.#{attr}_type"
+            scope "for_#{attr}", ->(*vals) {
+              raise ArgumentError, "No argument for for_#{attr} scope" if vals.empty?
+              ids_and_types = vals.map { |v| extract_ids_and_types(v, attr) }.flatten
+              conditions = ids_and_types.map { |hsh| "(#{key} = ? AND #{type_key} = ?)" }.join(' OR ')
+              where(conditions, *ids_and_types.map(&:values).flatten)
+            }
+            scope "not_for_#{attr}", ->(*vals) {
+              raise ArgumentError, "No argument for for_#{attr} scope" if vals.empty?
+              ids_and_types = vals.map { |v| extract_ids_and_types(v, attr) }.flatten
+              conditions = ids_and_types.map { |hsh| "(#{key} != ? AND #{type_key} != ?)" }.join(' AND ')
+              where("#{conditions} OR (#{key} IS NULL OR #{type_key} IS NULL)", *ids_and_types.map(&:values).flatten)
+            }
           else
-            scope "for_#{attr}",     ->(val) { where("#{table_name}.#{attr.to_s.foreign_key}" => parse_attrs(val)) }
-            scope "not_for_#{attr}", ->(val) {
-              parsed_attrs = parse_attrs(val)
-              conditions = if parsed_attrs.is_a?(Array)
-                "NOT IN (#{connection.quote(parsed_attrs.join(', '))})"
-              else
-                "!= #{connection.quote(parsed_attrs)}"
-              end
-              key = "#{table_name}.#{attr.to_s.foreign_key}"
-              where("#{key} #{conditions} OR #{key} IS NULL")
+            scope "for_#{attr}", ->(*vals) {
+              raise ArgumentError, "No argument for for_#{attr} scope" if vals.empty?
+              where("#{table_name}.#{attr.to_s.foreign_key}" => vals.map { |v| extract_ids(v, attr) }.flatten )
+            }
+            scope "not_for_#{attr}", ->(*vals) {
+              raise ArgumentError, "No argument for for_#{attr} scope" if vals.empty?
+              ids = vals.map { |v| extract_ids(v, attr) }.flatten
+              conditions = ids.size == 1 ? "!= ?" : "NOT IN (?)"
+              where("#{key} #{conditions} OR #{key} IS NULL", ids.size == 1 ? ids[0] : ids)
             }
           end
         else

@@ -73,6 +73,16 @@ describe MagicScopes do
           subject.with_about('Lorem Ipsum').count.should == 1
         end
 
+        it "accepts multiple arguments" do
+          User.create(about: 'bogus')
+          subject.with_about('bogus', 'lorem ipsum').count.should == 2
+        end
+
+        it "accepts multiple arguments for negative scope" do
+          User.create(about: 'bogus')
+          subject.about_ne('bogus', 'lorem ipsum').count.should == 1
+        end
+
         it "returns 1 for like" do
           subject.about_like('lorem').count.should == 1
         end
