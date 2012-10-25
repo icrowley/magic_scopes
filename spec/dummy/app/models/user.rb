@@ -1,7 +1,7 @@
 class User < ActiveRecord::Base
   attr_protected
 
-  belongs_to :parent
+  belongs_to :ref
   belongs_to :specable, polymorphic: true
 
   state_machine :state, initial: :pending do

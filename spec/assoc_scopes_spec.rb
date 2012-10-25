@@ -22,7 +22,7 @@ describe MagicScopes do
       before { subject.assoc_scopes }
 
       it "defines all possible association scopes" do
-        %w(user commentable parent).each do |attr|
+        %w(user commentable next).each do |attr|
           should respond_to("for_#{attr}")
         end
       end

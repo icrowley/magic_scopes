@@ -11,6 +11,26 @@ module MagicScopes
 
   module ClassMethods
 
+    def asc_scope
+      scope :asc, order(:id)
+    end
+
+    def desc_scope
+      scope :desc,   order("id DESC")
+      scope :recent, order("id DESC")
+    end
+    alias :recent_scope :desc_scope
+
+    def random_scope
+      scope :random, order('RANDOM()')
+    end
+
+    def standard_scopes
+      asc_scope
+      desc_scope
+      random_scope
+    end
+
     def boolean_scopes(*attrs)
       define_scopes(:boolean, attrs) do |attr|
         scope attr,          where("#{table_name}.#{attr}" => true)
@@ -26,29 +46,54 @@ module MagicScopes
       num_time_scopes([:time, :datetime, :date], attrs)
     end
 
+    def num_time_scopes(types, attrs)
+      define_scopes(types, attrs) do |attr|
+        key = "#{table_name}.#{attr}"
+        scope "with_#{attr}", ->(val) { where(key => val) }
+        scope "#{attr}_eq",   ->(val) { where(key => val) }
+        scope "#{attr}_gt",   ->(val) { where("#{key} > ?", val) }
+        scope "#{attr}_lt",   ->(val) { where("#{key} < ?", val) }
+        scope "#{attr}_gte",  ->(val) { where("#{key} >= ?", val) }
+        scope "#{attr}_lte",  ->(val) { where("#{key} <= ?", val) }
+        scope "#{attr}_ne",   ->(val) {
+          sql = "#{key} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?") << " OR #{key} IS NULL"
+          where(sql, val)
+        }
+        scope "by_#{attr}",      order("#{attr} ASC")
+        scope "by_#{attr}_desc", order("#{attr} DESC")
+      end
+    end
+    private :num_time_scopes
+
     def float_scopes(*attrs)
       define_scopes(:float, attrs) do |attr|
         scope "#{attr}_gt", ->(val){ where("#{table_name}.#{attr} > ?", val) }
         scope "#{attr}_lt", ->(val){ where("#{table_name}.#{attr} < ?", val) }
+        scope "by_#{attr}",      order("#{attr} ASC")
+        scope "by_#{attr}_desc", order("#{attr} DESC")
       end
     end
 
     def string_scopes(*attrs)
       define_scopes([:string, :text], attrs) do |attr|
-        scope "with_#{attr}",  ->(val) { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_eq",    ->(val) { where("#{table_name}.#{attr}" => val) }
+        key = "#{table_name}.#{attr}"
+        scope "with_#{attr}",  ->(val) { where(key => val) }
+        scope "#{attr}_eq",    ->(val) { where(key => val) }
         scope "#{attr}_ne",    ->(val) {
-          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?') << " OR #{table_name}.#{attr} IS NULL"
+          sql = "#{key} " << (val.is_a?(Array) ? 'NOT IN (?)' : '!= ?') << " OR #{key} IS NULL"
           where(sql, val)
         }
-        scope "#{attr}_like",  ->(val) { where("#{table_name}.#{attr} LIKE ?", "%#{val}%") }
+        scope "#{attr}_like",  ->(val) { where("#{key} LIKE ?", "%#{val}%") }
 
         ilike_scope = if connection.adapter_name == 'PostgreSQL'
-          ->(val){ where("#{table_name}.#{attr} ILIKE ?", "%#{val}%") }
+          ->(val){ where("#{key} ILIKE ?", "%#{val}%") }
         else
-          ->(val){ where("LOWER(#{table_name}.#{attr}) LIKE ?", "%#{val}%") }
+          ->(val){ where("LOWER(#{key}) LIKE ?", "%#{val}%") }
         end
         scope "#{attr}_ilike", ilike_scope
+
+        scope "by_#{attr}",      order("#{attr} ASC")
+        scope "by_#{attr}_desc", order("#{attr} DESC")
       end
     end
 
@@ -97,9 +142,9 @@ module MagicScopes
             scope "not_for_#{attr}", ->(val) {
               parsed_attrs = parse_attrs(val)
               conditions = if parsed_attrs.is_a?(Array)
-                "NOT IN (#{parsed_attrs.join(', ')})"
+                "NOT IN (#{connection.quote(parsed_attrs.join(', '))})"
               else
-                "!= #{parsed_attrs}"
+                "!= #{connection.quote(parsed_attrs)}"
               end
               key = "#{table_name}.#{attr.to_s.foreign_key}"
               where("#{key} #{conditions} OR #{key} IS NULL")
@@ -139,21 +184,6 @@ module MagicScopes
     end
 
     private
-
-    def num_time_scopes(types, attrs)
-      define_scopes(types, attrs) do |attr|
-        scope "with_#{attr}", ->(val) { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_eq",   ->(val) { where("#{table_name}.#{attr}" => val) }
-        scope "#{attr}_gt",   ->(val) { where("#{table_name}.#{attr} > ?", val) }
-        scope "#{attr}_lt",   ->(val) { where("#{table_name}.#{attr} < ?", val) }
-        scope "#{attr}_gte",  ->(val) { where("#{table_name}.#{attr} >= ?", val) }
-        scope "#{attr}_lte",  ->(val) { where("#{table_name}.#{attr} <= ?", val) }
-        scope "#{attr}_ne",   ->(val) {
-          sql = "#{table_name}.#{attr} " << (val.is_a?(Array) ? "NOT IN (?)" : "!= ?") << " OR #{table_name}.#{attr} IS NULL"
-          where(sql, val)
-        }
-      end
-    end
 
     def reflections_for?(attr)
       !!reflections[attr.to_s.sub(/_(id|type)$/, '').to_sym]

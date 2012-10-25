@@ -13,6 +13,8 @@ describe MagicScopes do
         it { should respond_to("#{scope}_like") }
         it { should respond_to("#{scope}_ilike") }
         it { should respond_to("#{scope}_ne") }
+        it { should respond_to("by_#{scope}") }
+        it { should respond_to("by_#{scope}_desc") }
       end
       it { should_not respond_to(:height) }
     end
@@ -86,6 +88,27 @@ describe MagicScopes do
           User.create(about: 'bogus')
           subject.about_ne(['Lorem Ipsum', 'bogus']).count.should == 1
         end
+
+        context "accepts symbols as arguments" do
+          before { User.create(about: 'bogus') }
+          it { subject.about_eq(:bogus).count.should == 1 }
+          it { subject.about_ne(:bogus).count.should == 2 }
+        end
+      end
+    end
+
+    describe "by scopes" do
+      before do
+        %w(b c a).each { |l| User.create(about: l) }
+        subject.string_scopes(:about)
+      end
+
+      it "properly sorts asc" do
+        subject.by_about.map(&:about).should == %w(a b c)
+      end
+
+      it "properly sorts desc" do
+        subject.by_about_desc.map(&:about).should == %w(c b a)
       end
     end
   end

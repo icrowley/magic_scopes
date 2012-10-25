@@ -5,9 +5,19 @@ describe MagicScopes do
   describe "ActiveRecord::Base methods" do
     subject { ActiveRecord::Base }
 
-    %w(boolean_scopes state_scopes assoc_scopes num_scopes time_scopes string_scopes magic_scopes).each do |scope_method|
+    %w(
+      boolean_scopes state_scopes assoc_scopes num_scopes time_scopes string_scopes magic_scopes
+      standard_scopes asc_scope desc_scope recent_scope random_scope
+    ).each do |scope_method|
       it { should respond_to(scope_method) }
     end
+  end
+
+  describe ".standard_scope" do
+    subject { Comment }
+    before { subject.standard_scopes }
+
+    %w(asc desc recent random).each { |scope| it { should respond_to("#{scope}_scope") } }
   end
 
   describe ".define_scopes" do

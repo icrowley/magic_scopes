@@ -11,10 +11,12 @@ describe MagicScopes do
         it { should_not respond_to("#{scope}_eq") }
         it { should respond_to("#{scope}_gt") }
         it { should respond_to("#{scope}_lt") }
+        it { should respond_to("by_#{scope}") }
+        it { should respond_to("by_#{scope}_desc") }
         it { should_not respond_to("#{scope}_gte") }
         it { should_not respond_to("#{scope}_lte") }
       end
-      it { should_not respond_to(:height) }
+      it { should_not respond_to("rating_gt") }
     end
 
     context "without arguments" do
@@ -36,7 +38,7 @@ describe MagicScopes do
 
     describe "fetching" do
       before do
-        [1.1, 2.2, 3.3].each { |val| User.create(rating: val) }
+        [2.2, 1.1, 3.3].each { |val| User.create(rating: val) }
         subject.float_scopes(:rating)
       end
 
@@ -47,6 +49,17 @@ describe MagicScopes do
       it "returns 2 for gt" do
         subject.rating_gt(2).count.should == 2
       end
+
+      describe "by scopes" do
+        it "properly sorts asc" do
+          subject.by_rating.map(&:rating).should == [1.1, 2.2, 3.3]
+        end
+
+        it "properly sorts desc" do
+          subject.by_rating_desc.map(&:rating).should == [3.3, 2.2, 1.1]
+        end
+      end
     end
+
   end
 end

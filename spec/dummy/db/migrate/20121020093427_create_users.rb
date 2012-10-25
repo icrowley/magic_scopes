@@ -11,7 +11,7 @@ class CreateUsers < ActiveRecord::Migration
 
       t.text :about
 
-      t.references :parent
+      t.references :ref
       t.references :specable, polymorphic: true
 
       t.string :state

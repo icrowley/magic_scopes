@@ -39,7 +39,7 @@ ActiveRecord::Schema.define(:version => 20121020094329) do
     t.integer  "weight"
     t.integer  "height"
     t.text     "about"
-    t.integer  "parent_id"
+    t.integer  "ref_id"
     t.integer  "specable_id"
     t.string   "specable_type"
     t.string   "state"

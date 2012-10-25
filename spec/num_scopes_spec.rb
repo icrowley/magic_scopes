@@ -14,6 +14,8 @@ describe MagicScopes do
         it { should respond_to("#{scope}_gte") }
         it { should respond_to("#{scope}_lte") }
         it { should respond_to("#{scope}_ne") }
+        it { should respond_to("by_#{scope}") }
+        it { should respond_to("by_#{scope}_desc") }
       end
       it { should_not respond_to(:height) }
     end
@@ -29,7 +31,7 @@ describe MagicScopes do
       end
 
       it "does not define num scopes with non num column types" do
-        %w(parent_id testable_id moderator about created_at last_name rating).each do |attr|
+        %w(ref_id testable_id moderator about created_at last_name rating).each do |attr|
           should_not respond_to("with_#{attr}")
         end
       end
@@ -75,6 +77,21 @@ describe MagicScopes do
 
       it "returns 2 for ne with array" do
         subject.age_ne([2, 4]).count.should == 2
+      end
+    end
+
+    describe "by scopes" do
+      before do
+        [2,4,5,1].each { |n| User.create(age: n) }
+        subject.num_scopes(:age)
+      end
+
+      it "properly sorts acs" do
+        subject.by_age.map(&:age).should == [1,2,4,5]
+      end
+
+      it "properly sorts desc" do
+        subject.by_age_desc.map(&:age).should == [5,4,2,1]
       end
     end
   end
