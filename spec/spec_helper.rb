@@ -12,14 +12,9 @@ end
 RSpec.configure do |config|
   config.use_transactional_fixtures = true
 
-  config.after(:all) do
+  config.after(:each) do
     [User, Comment].each do |model|
-      states = model.state_machines.keys.inject([]) do |ar, sm_key|
-        ar += model.state_machines[sm_key].states.map(&:name).map { |el| el || "nil_#{sm_key}" }
-        ar
-      end
-
-      (model.columns_hash.keys + model.reflections.keys + states).each do |arg|
+      model.send(:attrs_list).each do |arg|
         model.undef_scope(arg) if model.respond_to?(arg)
         %w(eq gt lt gte lte ne like ilike).each do |postfix|
           m = "#{arg}_#{postfix}"

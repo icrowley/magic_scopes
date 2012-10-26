@@ -7,17 +7,85 @@ require 'magic_scopes/railtie' if defined?(Rails)
 
 module MagicScopes
 
-  class WrongTypeError < StandardError; end
-  class NoAssociationError < StandardError; end
-  class NoStateMachineError < StandardError; end
-
   extend ActiveSupport::Concern
+
+  MAGIC_SCOPES = {
+    boolean:     [:is, :not, :with, :without],
+    integer:     [:with, :without, :eq, :ne, :gt, :gte, :lt, :lte, :by, :by_desc],
+    float:       [:with, :without, :lt, :gt, :by, :by_desc],
+    string:      [:with, :without, :eq, :ne, :by, :by_desc, :like, :ilike],
+    association: [:for, :not_for]
+  }
+  MAGIC_SCOPES[:state]   = MAGIC_SCOPES[:boolean]
+  MAGIC_SCOPES[:decimal] = MAGIC_SCOPES[:time] = MAGIC_SCOPES[:datetime] = MAGIC_SCOPES[:date] = MAGIC_SCOPES[:integer]
+  MAGIC_SCOPES[:text]    = MAGIC_SCOPES[:string]
 
   module ClassMethods
 
-    def asc_scope
-      scope :asc, order(:id)
+    def magic_scopes(*attrs)
+      options = attrs.extract_options!
+
+      if options[:in] && options[:ex]
+        raise ArgumentError, "In(clude) and ex(clude) options can not be specified simultaneously"
+      end
+
+      filter = options[:in] || options[:ex]
+
+      if filter && !Array.wrap(filter).all? { |scope_type| scope_type.to_sym.in?(magic_scopes_list) }
+        raise ArgumentError, "Wrong scope passed to magic_scopes"
+      end
+
+      if attrs.empty?
+        attrs = attrs_list
+      else
+        attrs = attrs.map(&:to_sym)
+        if filter && filter.any? { |scope_type| attrs.any? { |attr| scope_type.in?(MAGIC_SCOPES[attrs_with_types[attr]]) } }
+          raise ArgumentError, "Can not build scopes for all passed attributes"
+        end
+      end
+      unless attrs.all? { |attr| attr.to_sym.in?(attrs_list) }
+        raise ActiveRecord::UnknownAttributeError, "Unknown attribute passed to magic_scopes"
+      end
+
+      attrs
     end
+
+    private
+
+    def magic_scopes_list
+      @magic_scopes_list ||= MAGIC_SCOPES.values.flatten.uniq
+    end
+
+    def attrs_list
+      @attrs_list ||= begin
+        states = if defined?(StateMachine)
+            state_machines.keys.inject([]) do |ar, sm_key|
+              ar += state_machines[sm_key].states.map(&:name).map { |el| el || "nil_#{sm_key}" }
+              ar
+            end
+          end
+        (columns_hash.keys + reflections.keys + (states || [])).map(&:to_sym)
+      end
+    end
+
+    def attrs_with_types
+      @attrs_with_types ||= attrs_list.inject({}) do |hsh, attr|
+        if reflections[attr]
+          :association
+        elsif type = columns_hash[attr.to_s].try(:type)
+          type
+        else
+          :state
+        end
+        hsh
+      end
+    end
+
+    def asc_scope
+      scope :asc,    order(:id)
+      scope :sorted, order(:id)
+    end
+    alias :sorted_scope :asc_scope
 
     def desc_scope
       scope :desc,   order('id DESC')
@@ -72,7 +140,6 @@ module MagicScopes
         scope "by_#{attr}_desc", order("#{key} DESC")
       end
     end
-    private :num_time_scopes
 
     def float_scopes(*attrs)
       define_scopes(:float, attrs) do |attr|
@@ -192,46 +259,6 @@ module MagicScopes
           else
             raise NoStateMachineError, "No state machine for attribute #{attr}"
           end
-        end
-      end
-    end
-
-    def magic_scopes
-      boolean_scopes
-      num_scopes
-      time_scopes
-      float_scopes
-      string_scopes
-      assoc_scopes
-      state_scopes if defined?(StateMachine)
-    end
-
-    private
-
-    def reflections_for?(attr)
-      !!reflections[attr.to_s.sub(/_(id|type)$/, '').to_sym]
-    end
-
-    def define_scopes(types, attrs, &block)
-      types = Array.wrap(types)
-      attrs = columns_hash.inject([]) do |ar, (attr, meta)|
-        ar << attr if meta.type.in?(types) && !reflections_for?(attr) && (!defined?(StateMachine) || !state_machines[attr.to_sym])
-        ar
-      end if attrs.empty?
-
-      attrs.each do |attr|
-        begin
-          if defined?(StateMachine) && state_machines[attr.to_sym]
-            raise ArgumentError, "State machine column #{attr} used for value scope"
-          elsif reflections_for?(attr)
-            raise ArgumentError, "Association column #{attr} used for value scope"
-          elsif (type = columns_hash[attr.to_s].type).in?(types)
-            yield(attr)
-          else
-            raise WrongTypeError, "Wrong type #{type} for argument #{attr}"
-          end
-        rescue NoMethodError
-          raise ActiveRecord::UnknownAttributeError, "Unknown attribute: #{attr}"
         end
       end
     end
