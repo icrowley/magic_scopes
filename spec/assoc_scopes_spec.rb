@@ -75,6 +75,10 @@ describe MagicScopes do
           it "accepts arrays with user instances and user ids" do
             subject.for_user([user, user2.id, '3']).count.should == 2
           end
+
+          it "raises error when unexpected argument passes" do
+            expect { subject.for_user([user, user2.id, 'bogus']) }.to raise_error(ArgumentError)
+          end
         end
 
         it "returns 2 for non user instance" do
@@ -111,6 +115,10 @@ describe MagicScopes do
 
           it "accepts arrays with user instances" do
             subject.for_commentable([user, user2]).count.should == 2
+          end
+
+          it "raises error when unexpected argument passes" do
+            expect { subject.for_commentable([user, 'bogus']) }.to raise_error(ArgumentError)
           end
         end
 

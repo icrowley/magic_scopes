@@ -1,6 +1,10 @@
 require 'magic_scopes/version'
 require 'magic_scopes/railtie' if defined?(Rails)
 
+# interface:
+# magic_scopes *attrs
+# magic_scopes :rating, :age, :first_name, :last_name, in: %w(gt lt ne), std: %w(desc random)
+
 module MagicScopes
 
   class WrongTypeError < StandardError; end
@@ -124,11 +128,11 @@ module MagicScopes
       def extract_ids_and_types(val, attr)
         if val.is_a?(ActiveRecord::Base)
           {id: val.id, type: val.class.name}
-        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(ActiveRecord::Base) }
-          val.map { |v| {id: v.id, type: v.class.name} }
         elsif val.is_a?(Hash) && val.assert_valid_keys(:id, :type)
           val
-        elsif val.is_a?(Array) && val.size == 2 && id = val.find { |v| v.to_i != 0 }
+        elsif val.is_a?(Array) && val.all? { |v| v.is_a?(ActiveRecord::Base) }
+          val.map { |v| {id: v.id, type: v.class.name} }
+        elsif val.is_a?(Array) && val.size == 2 && id = val.find { |v| v.respond_to?(:to_i) && v.to_i != 0 }
           val.delete(id)
           {id: id, type: val[0]}
         else
