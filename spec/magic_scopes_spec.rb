@@ -46,8 +46,12 @@ describe MagicScopes do
     end
 
     describe "options" do
+      it "raises error if uknown option is passed" do
+        expect { subject.magic_scopes bogus: true }.to raise_error(ArgumentError)
+      end
+
       it "uses all types of scopes unless in/ex options specified" do
-        subject.magic_scopes.keys.should == MagicScopes::ScopesBuilder.new(subject).send(:all_possible_attrs)
+        subject.magic_scopes.keys.should == MagicScopes::ScopesBuilder.new(subject).send(:all_possible_attributes)
       end
 
       it "accepts arrays as arguments to options as well as symbols and strings" do
@@ -133,6 +137,89 @@ describe MagicScopes do
 
         it "does not raise error if scopes can not be built if no attributes passed" do
           expect { subject.magic_scopes ex: %w(eq ne) }.to_not raise_error
+        end
+      end
+
+      describe "attributes with its own scopes" do
+
+        it "raises error if unknown scope type is passed" do
+          expect { subject.magic_scopes(title: %w(with eq bogus)) }.to raise_error(ArgumentError)
+        end
+
+        it "raises error if the same attribute passed in attributes list and in hash" do
+          expect { subject.magic_scopes(:title, title: :eq) }.to raise_error(ArgumentError)
+        end
+
+        it "extracts states from attributes" do
+          subject.magic_scopes(state: %w(is with))
+          subject.state_machines[:state].states.map(&:name).each do |state|
+            should respond_to(state)
+            should_not respond_to("not_#{state}")
+            should_not respond_to("#{state}_eq")
+          end
+        end
+
+        context "without in or ex option specified" do
+          before { subject.magic_scopes(title: %w(with eq)) }
+
+          it "defines only specified scopes" do
+            should     respond_to(:with_title)
+            should     respond_to(:title_eq)
+            should_not respond_to(:by_title)
+            should_not respond_to(:by_title_desc)
+            should_not respond_to(:title_ne)
+            should_not respond_to(:title_like)
+            should_not respond_to(:title_ilike)
+          end
+
+          it "defines all possible scopes for other attributes" do
+            should respond_to(:content_eq)
+            should respond_to(:user_id_eq)
+            should respond_to(:for_user)
+            should respond_to(:for_commentable)
+            should respond_to(:with_commentable_type)
+            should respond_to(:rating_gt)
+          end
+        end
+
+        context "with in option passed" do
+          before { subject.magic_scopes(:content, title: %w(with eq), in: %w(without ne eq)) }
+
+          it "does not define scopes for scopes passed in it" do
+            should     respond_to(:with_title)
+            should     respond_to(:title_eq)
+            should_not respond_to(:title_ne)
+            should_not respond_to(:without_title)
+          end
+
+          it "defines scopes passed in it for other attributes" do
+            should     respond_to(:content_eq)
+            should     respond_to(:content_ne)
+            should     respond_to(:without_content)
+            should_not respond_to(:with_content)
+          end
+        end
+
+        context "with ex option passed" do
+          before { subject.magic_scopes(:content, title: %w(with eq), ex: %w(without ne eq)) }
+
+          it "does not define scopes computed using it" do
+            should     respond_to(:with_title)
+            should     respond_to(:title_eq)
+            should_not respond_to(:title_ne)
+            should_not respond_to(:without_title)
+          end
+
+          it "defines scopes computed using it for other attributes" do
+            should_not respond_to(:content_eq)
+            should_not respond_to(:content_ne)
+            should_not respond_to(:without_content)
+            should     respond_to(:with_content)
+            should     respond_to(:content_like)
+            should     respond_to(:content_ilike)
+            should     respond_to(:by_content)
+            should     respond_to(:by_content_desc)
+          end
         end
       end
 

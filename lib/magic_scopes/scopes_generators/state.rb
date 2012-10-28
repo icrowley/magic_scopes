@@ -5,8 +5,6 @@ if defined?(StateMachine)
         @model = model
         @state = state
         @key   = "#{model.table_name}.#{attr}"
-        model.instance_eval("undef :with_#{attr}")
-        model.instance_eval("undef :without_#{attr}")
       end
 
       def is
@@ -18,10 +16,12 @@ if defined?(StateMachine)
       end
 
       def with
+        @model.instance_eval("undef :with_#{attr}")
         scope "with_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NOT NULL" : ["#{@key} IN (?)", vals]) }
       end
 
       def without
+        @model.instance_eval("undef :without_#{attr}")
         scope "without_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NULL" : ["#{@key} NOT IN (?)", vals]) }
       end
 
