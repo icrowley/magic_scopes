@@ -1,35 +1,24 @@
 require 'spec_helper'
 
 describe MagicScopes do
-  describe ".assoc_scopes" do
+  describe "association scopes" do
     subject { Comment }
 
-    context "with arguments" do
-      before { subject.assoc_scopes(:user, :commentable) }
-      %w(user commentable).each do |scope|
-        it { should respond_to("for_#{scope}") }
-        it { should respond_to("not_for_#{scope}") }
-      end
-      it { should_not respond_to(:next) }
-    end
-
-    it "raises an error when argument is not an association" do
-      expect { subject.assoc_scopes(:state) }.to raise_error(MagicScopes::NoAssociationError)
-    end
-
-    context "without arguments" do
-
-      before { subject.assoc_scopes }
+    describe "generated scopes" do
+      let(:attrs) { [:user, :commentable, :next] }
+      before { subject.magic_scopes(*attrs) }
 
       it "defines all possible association scopes" do
-        %w(user commentable next).each do |attr|
+        attrs.each do |attr|
           should respond_to("for_#{attr}")
+          should respond_to("not_for_#{attr}")
         end
       end
 
       it "does not define association scopes with non foreign column types" do
-        %w(title content state likes_state featured hidden best).each do |attr|
+        (subject.send(:attrs_list) - attrs).each do |attr|
           should_not respond_to("for_#{attr}")
+          should_not respond_to("not_for_#{attr}")
         end
       end
     end
@@ -39,9 +28,9 @@ describe MagicScopes do
 
       context "simple association" do
         before do
-          Comment.create(user_id: user.id)
-          2.times { Comment.create }
-          subject.assoc_scopes(:user)
+          subject.magic_scopes(:user)
+          subject.create(user_id: user.id)
+          2.times { subject.create }
         end
 
         it "returns 1 for user instance" do
@@ -54,7 +43,7 @@ describe MagicScopes do
 
         context "with multiple models" do
           let(:user2) { User.create }
-          before { Comment.create(user_id: user2.id) }
+          before { subject.create(user_id: user2.id) }
 
           it "accepts multiple arguments" do
             subject.for_user(user, user2.id).count.should == 2
@@ -92,9 +81,9 @@ describe MagicScopes do
 
       context "polymorphic association" do
         before do
-          Comment.create(commentable: user)
-          2.times { Comment.create }
-          subject.assoc_scopes(:commentable)
+          subject.magic_scopes(:commentable)
+          subject.create(commentable: user)
+          2.times { subject.create }
         end
 
         it "returns 1 for user instance" do
@@ -103,7 +92,7 @@ describe MagicScopes do
 
         context "with multiple models" do
           let(:user2) { User.create }
-          before { Comment.create(commentable: user2) }
+          before { subject.create(commentable: user2) }
 
           it "accepts multiple arguments" do
             subject.for_commentable(user, id: user2.id, type: user2.class.name).count.should == 2

@@ -1,47 +1,44 @@
 require 'spec_helper'
 
 describe MagicScopes do
-  describe ".float_scopes" do
+  describe "float scopes" do
     subject { User }
 
-    context "with arguments" do
-      before { subject.float_scopes(:floato, :floatum) }
-      %w(floato floatum).each do |scope|
-        it { should_not respond_to(scope) }
-        it { should_not respond_to("#{scope}_eq") }
-        it { should respond_to("with_#{scope}") }
-        it { should respond_to("without_#{scope}") }
-        it { should respond_to("#{scope}_gt") }
-        it { should respond_to("#{scope}_lt") }
-        it { should respond_to("by_#{scope}") }
-        it { should respond_to("by_#{scope}_desc") }
-        it { should_not respond_to("#{scope}_gte") }
-        it { should_not respond_to("#{scope}_lte") }
-      end
-      it { should_not respond_to("rating_gt") }
-    end
-
-    context "without arguments" do
-
-      before { subject.float_scopes }
+    describe "generated scopes" do
+      let(:attrs) { [:rating, :floato, :floatum] }
+      before { subject.magic_scopes(*attrs) }
 
       it "defines all possible float scopes" do
-        %w(rating floato floatum).each do |attr|
+        attrs.each do |attr|
+          should_not respond_to(attr)
+          should_not respond_to("#{attr}_eq")
+          should respond_to("with_#{attr}")
+          should respond_to("without_#{attr}")
           should respond_to("#{attr}_gt")
+          should respond_to("#{attr}_lt")
+          should respond_to("by_#{attr}")
+          should respond_to("by_#{attr}_desc")
+          should_not respond_to("#{attr}_gte")
+          should_not respond_to("#{attr}_lte")
         end
       end
 
       it "does not define float scopes with non float column types" do
-        %w(moderator about created_at last_name age).each do |attr|
+        (subject.send(:attrs_list) - attrs).each do |attr|
+          should_not respond_to("with_#{attr}")
+          should_not respond_to("without_#{attr}")
           should_not respond_to("#{attr}_gt")
+          should_not respond_to("#{attr}_lt")
+          should_not respond_to("by_#{attr}")
+          should_not respond_to("by_#{attr}_desc")
         end
       end
     end
 
     describe "fetching" do
       before do
-        [2.2, 1.1, 3.3].each { |val| User.create(rating: val) }
-        subject.float_scopes(:rating)
+        subject.magic_scopes(:rating)
+        [2.2, 1.1, 3.3].each { |val| subject.create(rating: val) }
       end
 
       it "returns 1 for lt" do
@@ -63,7 +60,7 @@ describe MagicScopes do
       end
 
       describe "with/without" do
-        before { User.create }
+        before { subject.create }
 
         it "returns 3 for with" do
           subject.with_rating.count.should == 3

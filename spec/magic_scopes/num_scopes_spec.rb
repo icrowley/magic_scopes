@@ -1,47 +1,48 @@
 require 'spec_helper'
 
 describe MagicScopes do
-  describe ".num_scopes" do
+  describe "num scopes" do
     subject { User }
 
-    context "with arguments" do
-      before { subject.num_scopes(:age, :weight) }
-      %w(age weight).each do |scope|
-        it { should respond_to("with_#{scope}") }
-        it { should respond_to("without_#{scope}") }
-        it { should respond_to("#{scope}_eq") }
-        it { should respond_to("#{scope}_gt") }
-        it { should respond_to("#{scope}_lt") }
-        it { should respond_to("#{scope}_gte") }
-        it { should respond_to("#{scope}_lte") }
-        it { should respond_to("#{scope}_ne") }
-        it { should respond_to("by_#{scope}") }
-        it { should respond_to("by_#{scope}_desc") }
-      end
-      it { should_not respond_to(:height) }
-    end
-
-    context "without arguments" do
-
-      before { subject.num_scopes }
+    describe "generated scopes" do
+      let(:attrs) { [:age, :weight, :height, :dec] }
+      before { subject.magic_scopes(*attrs) }
 
       it "defines all possible num scopes" do
-        %w(age weight height dec).each do |attr|
+        attrs.each do |attr|
           should respond_to("with_#{attr}")
+          should respond_to("without_#{attr}")
+          should respond_to("#{attr}_eq")
+          should respond_to("#{attr}_gt")
+          should respond_to("#{attr}_lt")
+          should respond_to("#{attr}_gte")
+          should respond_to("#{attr}_lte")
+          should respond_to("#{attr}_ne")
+          should respond_to("by_#{attr}")
+          should respond_to("by_#{attr}_desc")
         end
       end
 
       it "does not define num scopes with non num column types" do
-        %w(ref_id testable_id moderator about created_at last_name rating).each do |attr|
+        (subject.send(:attrs_list) - attrs).each do |attr|
           should_not respond_to("with_#{attr}")
+          should_not respond_to("without_#{attr}")
+          should_not respond_to("#{attr}_eq")
+          should_not respond_to("#{attr}_gt")
+          should_not respond_to("#{attr}_lt")
+          should_not respond_to("#{attr}_gte")
+          should_not respond_to("#{attr}_lte")
+          should_not respond_to("#{attr}_ne")
+          should_not respond_to("by_#{attr}")
+          should_not respond_to("by_#{attr}_desc")
         end
       end
     end
 
     describe "fetching" do
       before do
-        (1..4).each { |val| User.create(age: val) }
-        subject.num_scopes(:age)
+        subject.magic_scopes(:age)
+        (1..4).each { |val| subject.create(age: val) }
       end
 
       it "returns 1 for age" do
@@ -91,8 +92,8 @@ describe MagicScopes do
 
     describe "by scopes" do
       before do
-        [2,4,5,1].each { |n| User.create(age: n) }
-        subject.num_scopes(:age)
+        subject.magic_scopes(:age)
+        [2,4,5,1].each { |n| subject.create(age: n) }
       end
 
       it "properly sorts asc" do
@@ -104,7 +105,7 @@ describe MagicScopes do
       end
 
       describe "with/without" do
-        before { User.create }
+        before { subject.create }
 
         it "returns 4 for with" do
           subject.with_age.count.should == 4

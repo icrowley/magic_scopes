@@ -1,52 +1,48 @@
 require 'spec_helper'
 
 describe MagicScopes do
-  describe ".string_scopes" do
-    before { User.connection.execute('PRAGMA case_sensitive_like = 1;') } if User.connection.adapter_name == 'SQLite'
+  describe "string scopes" do
     subject { User }
+    before { User.connection.execute('PRAGMA case_sensitive_like = 1;') } if User.connection.adapter_name == 'SQLite'
 
-    context "with arguments" do
-      before { subject.string_scopes(:email, :about) }
-      %w(email about).each do |scope|
-        it { should respond_to("with_#{scope}") }
-        it { should respond_to("without_#{scope}") }
-        it { should respond_to("#{scope}_eq") }
-        it { should respond_to("#{scope}_like") }
-        it { should respond_to("#{scope}_ilike") }
-        it { should respond_to("#{scope}_ne") }
-        it { should respond_to("by_#{scope}") }
-        it { should respond_to("by_#{scope}_desc") }
-      end
-      it { should_not respond_to(:height) }
-    end
-
-    context "without arguments" do
-
-      before { subject.string_scopes }
+    describe "generated scopes" do
+      let(:attrs) { [:email, :about, :first_name, :last_name] }
+      before { subject.magic_scopes(*attrs) }
 
       it "defines all possible string scopes" do
-        %w(email about first_name last_name).each do |attr|
+        attrs.each do |attr|
           should respond_to("with_#{attr}")
+          should respond_to("without_#{attr}")
+          should respond_to("#{attr}_eq")
+          should respond_to("#{attr}_like")
+          should respond_to("#{attr}_ilike")
+          should respond_to("#{attr}_ne")
+          should respond_to("by_#{attr}")
+          should respond_to("by_#{attr}_desc")
         end
       end
 
       it "does not define string scopes with non string column types" do
-        %w(moderator created_at rating age height).each do |attr|
+        (subject.send(:attrs_list) - attrs).each do |attr|
           should_not respond_to("with_#{attr}")
+          should_not respond_to("without_#{attr}")
+          should_not respond_to("#{attr}_eq")
+          should_not respond_to("#{attr}_like")
+          should_not respond_to("#{attr}_ilike")
+          should_not respond_to("#{attr}_ne")
+          should_not respond_to("by_#{attr}")
+          should_not respond_to("by_#{attr}_desc")
         end
       end
-
-      it { should_not respond_to(:commentable_type_like) }
-      it { should_not respond_to(:state_like) }
     end
 
     describe "fetching" do
 
       context "email" do
         before do
-          User.create(email: 'test@example.org')
-          User.create(email: 'bogus@example.org')
-          subject.string_scopes(:email)
+          subject.magic_scopes(:email)
+          subject.create(email: 'test@example.org')
+          subject.create(email: 'bogus@example.org')
         end
 
         it "returns 1 for exact search" do
@@ -64,9 +60,9 @@ describe MagicScopes do
 
       context "about" do
         before do
-          User.create(about: 'Lorem Ipsum')
-          User.create(about: 'lorem ipsum')
-          subject.string_scopes(:about)
+          subject.magic_scopes(:about)
+          subject.create(about: 'Lorem Ipsum')
+          subject.create(about: 'lorem ipsum')
         end
 
         it "returns 1 for exact search" do
@@ -74,12 +70,12 @@ describe MagicScopes do
         end
 
         it "accepts multiple arguments" do
-          User.create(about: 'bogus')
+          subject.create(about: 'bogus')
           subject.with_about('bogus', 'lorem ipsum').count.should == 2
         end
 
         it "accepts multiple arguments for negative scope" do
-          User.create(about: 'bogus')
+          subject.create(about: 'bogus')
           subject.about_ne('bogus', 'lorem ipsum').count.should == 1
         end
 
@@ -96,18 +92,18 @@ describe MagicScopes do
         end
 
         it "returns 1 for ne with array" do
-          User.create(about: 'bogus')
+          subject.create(about: 'bogus')
           subject.about_ne(['Lorem Ipsum', 'bogus']).count.should == 1
         end
 
         context "accepts symbols as arguments" do
-          before { User.create(about: 'bogus') }
+          before { subject.create(about: 'bogus') }
           it { subject.about_eq(:bogus).count.should == 1 }
           it { subject.about_ne(:bogus).count.should == 2 }
         end
 
         describe "with/without" do
-          before { User.create }
+          before { subject.create }
 
           it "returns 2 for with" do
             subject.with_about.count.should == 2
@@ -122,8 +118,8 @@ describe MagicScopes do
 
     describe "by scopes" do
       before do
-        %w(b c a).each { |l| User.create(about: l) }
-        subject.string_scopes(:about)
+        subject.magic_scopes(:about)
+        %w(b c a).each { |l| subject.create(about: l) }
       end
 
       it "properly sorts asc" do
