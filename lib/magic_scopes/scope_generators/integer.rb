@@ -1,5 +1,5 @@
 module MagicScopes
-  class NumScopesGenerator < ScopesGenerator::Base
+  class IntegerScopesGenerator < ScopesGenerator::Base
 
     include EqualityScopes
     include OrderScopes
@@ -20,9 +20,8 @@ module MagicScopes
   # %w(integer decimal time datetime date).each do |type|
   #   send("#{type.classify}=", NumScopesGenerator)
   # end
-  IntegerScopesGenerator  = NumScopesGenerator
-  DecimalScopesGenerator  = NumScopesGenerator
-  TimeScopesGenerator     = NumScopesGenerator
-  DatetimeScopesGenerator = NumScopesGenerator
-  DateScopesGenerator     = NumScopesGenerator
+  DecimalScopesGenerator  = IntegerScopesGenerator
+  TimeScopesGenerator     = IntegerScopesGenerator
+  DatetimeScopesGenerator = IntegerScopesGenerator
+  DateScopesGenerator     = IntegerScopesGenerator
 end
