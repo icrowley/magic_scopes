@@ -1,3 +1,4 @@
+require 'magic_scopes/standard_scopes'
 require 'magic_scopes/base'
 require 'magic_scopes/scope_generators/mixins/order_scopes'
 require 'magic_scopes/scope_generators/mixins/comparison_scopes'

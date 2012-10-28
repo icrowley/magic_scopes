@@ -60,6 +60,38 @@ describe MagicScopes do
         expect { subject.magic_scopes in: %w(eq ne), ex: :with }.to raise_error(ArgumentError)
       end
 
+
+      describe "standard" do
+        context "without arguments" do
+          before { subject.magic_scopes }
+
+          it "responds to all standard scopes" do
+            subject::STANDARD_SCOPES.each do |scope|
+              should respond_to(scope)
+            end
+          end
+        end
+
+        context "with arguments" do
+          let(:scopes) { %w(sorted recent) }
+          before { subject.magic_scopes(std: scopes) }
+
+          it "responds only to to specified standard scopes" do
+            scopes.each { |scope| should respond_to(scope) }
+          end
+
+          it "does not respond to not specified standard scopes" do
+            (subject::STANDARD_SCOPES - scopes.map(&:to_sym)).each { |scope| should_not respond_to(scope) }
+          end
+        end
+
+        context "with wrong options passed" do
+          it "raises argument error" do
+            expect { subject.magic_scopes(std: %w(recent bogus)) }.to raise_error(ArgumentError)
+          end
+        end
+      end
+
       describe "include" do
         it "does not raise error if all options are allowed ones" do
           expect { subject.magic_scopes in: %w(eq ne) }.to_not raise_error
@@ -105,12 +137,19 @@ describe MagicScopes do
       end
 
       describe "generating scopes" do
-        before { subject.magic_scopes(:title, :likes_num, in: %w(eq ne)) }
-        it "generates all needed scopes" do
-          subject.should respond_to('title_eq')
-          subject.should respond_to('title_ne')
-          subject.should respond_to('likes_num_eq')
-          subject.should respond_to('likes_num_ne')
+        context "with include option specified`" do
+          before { subject.magic_scopes(:title, :likes_num, in: %w(eq ne)) }
+          it "generates all needed scopes" do
+            %w(title_eq title_ne likes_num_eq likes_num_ne).each { |scope| should respond_to(scope) }
+          end
+        end
+
+        context "witn empty include option" do
+          before { subject.magic_scopes(:title, :likes_num, in: []) }
+          it "does not generate any scopes except standard ones" do
+            subject::STANDARD_SCOPES.each { |scope| should respond_to(scope) }
+            %w(title_eq title_ne likes_num_eq likes_num_ne).each { |scope| should_not respond_to(scope) }
+          end
         end
       end
     end

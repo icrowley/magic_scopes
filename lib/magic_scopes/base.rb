@@ -2,6 +2,8 @@ module MagicScopes::Base
 
   extend ActiveSupport::Concern
 
+  include MagicScopes::StandardScopes
+
   MAGIC_SCOPES = {
     boolean:     [:is, :not, :with, :without],
     integer:     [:with, :without, :eq, :ne, :gt, :gte, :lt, :lte, :by, :by_desc],
@@ -17,7 +19,13 @@ module MagicScopes::Base
   module ClassMethods
 
     def magic_scopes(*attrs)
-      options = attrs.extract_options!
+      options = attrs.extract_options!.symbolize_keys
+
+      if options[:std] && option = options[:std].find { |opt| self::STANDARD_SCOPES.exclude?(opt.to_sym) }
+        raise ArgumentError, "Unknown option #{option} passed to magic_scopes"
+      end
+
+      (options[:std] || self::STANDARD_SCOPES).each { |scope_type| send("#{scope_type}_scope") }
 
       if options[:in] && options[:ex]
         raise ArgumentError, "In(clude) and ex(clude) options can not be specified simultaneously"

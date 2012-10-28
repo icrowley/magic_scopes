@@ -27,6 +27,7 @@ RSpec.configure do |config|
         end
         m = "by_#{arg}_desc"
         model.undef_meth(m) if model.respond_to?(m)
+        model::STANDARD_SCOPES.each { |m| model.undef_meth(m) if model.respond_to?(m) }
       end
     end
   end
