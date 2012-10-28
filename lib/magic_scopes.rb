@@ -1,4 +1,8 @@
 require 'magic_scopes/base'
+require 'magic_scopes/scope_generators/mixins/order_scopes'
+require 'magic_scopes/scope_generators/mixins/comparison_scopes'
+require 'magic_scopes/scope_generators/mixins/equality_scopes'
+require 'magic_scopes/scope_generators/mixins/presence_scopes'
 require 'magic_scopes/scope_generators/base'
 require 'magic_scopes/scope_generators/boolean'
 require 'magic_scopes/scope_generators/num'
