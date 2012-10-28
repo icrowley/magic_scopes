@@ -15,7 +15,7 @@ RSpec.configure do |config|
 
   config.after(:each) do
     [User, Comment].each do |model|
-      model.send(:all_possible_attrs).each do |arg|
+      MagicScopes::ScopesBuilder.new(model).send(:all_possible_attrs).each do |arg|
         model.undef_meth(arg) if model.respond_to?(arg)
         %w(eq gt lt gte lte ne like ilike).each do |postfix|
           m = "#{arg}_#{postfix}"
@@ -27,7 +27,7 @@ RSpec.configure do |config|
         end
         m = "by_#{arg}_desc"
         model.undef_meth(m) if model.respond_to?(m)
-        model::STANDARD_SCOPES.each { |m| model.undef_meth(m) if model.respond_to?(m) }
+        MagicScopes::ScopesBuilder::STANDARD_SCOPES.each { |m| model.undef_meth(m) if model.respond_to?(m) }
       end
     end
   end

@@ -6,29 +6,26 @@ module MagicScopes
       self::STANDARD_SCOPES = [:asc, :sorted, :desc, :recent, :random]
     end
 
-    module ClassMethods
+    private
 
-      private
+    def asc_scope
+      scope :asc, order(:id)
+    end
 
-      def asc_scope
-        scope :asc, order(:id)
-      end
+    def sorted_scope
+      scope :sorted, order(:id)
+    end
 
-      def sorted_scope
-        scope :sorted, order(:id)
-      end
+    def desc_scope
+      scope :desc,  order('id DESC')
+    end
 
-      def desc_scope
-        scope :desc,  order('id DESC')
-      end
+    def recent_scope
+      scope :recent, order('id DESC')
+    end
 
-      def recent_scope
-        scope :recent, order('id DESC')
-      end
-
-      def random_scope
-        scope :random, order('RANDOM()')
-      end
+    def random_scope
+      scope :random, order('RANDOM()')
     end
   end
 end

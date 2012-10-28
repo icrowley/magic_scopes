@@ -24,7 +24,7 @@ describe MagicScopes do
       end
 
       it "does not define num scopes with non num column types" do
-        (subject.send(:all_possible_attrs) - attrs).each do |attr|
+        (MagicScopes::ScopesBuilder.new(subject).send(:all_possible_attrs) - attrs).each do |attr|
           should_not respond_to("with_#{attr}")
           should_not respond_to("without_#{attr}")
           should_not respond_to("#{attr}_eq")

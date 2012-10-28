@@ -47,7 +47,7 @@ describe MagicScopes do
 
     describe "options" do
       it "uses all types of scopes unless in/ex options specified" do
-        subject.magic_scopes.keys.should == subject.send(:all_possible_attrs)
+        subject.magic_scopes.keys.should == MagicScopes::ScopesBuilder.new(subject).send(:all_possible_attrs)
       end
 
       it "accepts arrays as arguments to options as well as symbols and strings" do
@@ -66,7 +66,7 @@ describe MagicScopes do
           before { subject.magic_scopes }
 
           it "responds to all standard scopes" do
-            subject::STANDARD_SCOPES.each do |scope|
+            MagicScopes::ScopesBuilder::STANDARD_SCOPES.each do |scope|
               should respond_to(scope)
             end
           end
@@ -81,7 +81,7 @@ describe MagicScopes do
           end
 
           it "does not respond to not specified standard scopes" do
-            (subject::STANDARD_SCOPES - scopes.map(&:to_sym)).each { |scope| should_not respond_to(scope) }
+            (MagicScopes::ScopesBuilder::STANDARD_SCOPES - scopes.map(&:to_sym)).each { |scope| should_not respond_to(scope) }
           end
         end
 
@@ -147,7 +147,7 @@ describe MagicScopes do
         context "witn empty include option" do
           before { subject.magic_scopes(:title, :likes_num, in: []) }
           it "does not generate any scopes except standard ones" do
-            subject::STANDARD_SCOPES.each { |scope| should respond_to(scope) }
+            MagicScopes::ScopesBuilder::STANDARD_SCOPES.each { |scope| should respond_to(scope) }
             %w(title_eq title_ne likes_num_eq likes_num_ne).each { |scope| should_not respond_to(scope) }
           end
         end

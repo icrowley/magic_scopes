@@ -44,7 +44,8 @@ describe MagicScopes do
       end
 
       it "does not define state scopes if column is not state one" do
-        (subject.send(:all_possible_attrs) - subject.send(:extract_states_from_attrs, attrs)).each do |attr|
+        builder = MagicScopes::ScopesBuilder.new(subject)
+        (builder.send(:all_possible_attrs) - builder.send(:extract_states_from_attrs, attrs)).each do |attr|
           should_not respond_to(attr)
           should_not respond_to("not_#{attr}")
         end
