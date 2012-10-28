@@ -15,7 +15,7 @@ RSpec.configure do |config|
 
   config.after(:each) do
     [User, Comment].each do |model|
-      model.send(:attrs_list).each do |arg|
+      model.send(:all_possible_attrs).each do |arg|
         model.undef_meth(arg) if model.respond_to?(arg)
         %w(eq gt lt gte lte ne like ilike).each do |postfix|
           m = "#{arg}_#{postfix}"

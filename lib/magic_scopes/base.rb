@@ -47,14 +47,14 @@ module MagicScopes::Base
         end
 
       if attrs.empty?
-        attrs = attrs_list
+        attrs = all_possible_attrs
       else
         attrs = extract_states_from_attrs(attrs.map(&:to_sym))
         if filters && wrong_scope = needed_scopes.find { |scope_type| attrs.any? { |attr| !has_scope_generator_for?(attr, scope_type) } }
           raise ArgumentError, "Can not build scope #{wrong_scope} for all passed attributes"
         end
       end
-      if wrong_attr = attrs.find { |attr| attrs_list.exclude?(attr) }
+      if wrong_attr = attrs.find { |attr| all_possible_attrs.exclude?(attr) }
         raise ActiveRecord::UnknownAttributeError, "Unknown attribute #{wrong_attr} passed to magic_scopes"
       end
 
@@ -89,11 +89,11 @@ module MagicScopes::Base
       @magic_scopes_list ||= MAGIC_SCOPES.values.flatten.uniq
     end
 
-    def attrs_list
-      @attrs_list ||= begin
-        attrs_list = columns_hash.keys.map(&:to_sym) + reflections.keys
-        attrs_list = extract_states_from_attrs(attrs_list)
-        attrs_list
+    def all_possible_attrs
+      @all_possible_attrs ||= begin
+        all_possible_attrs = columns_hash.keys.map(&:to_sym) + reflections.keys
+        all_possible_attrs = extract_states_from_attrs(all_possible_attrs)
+        all_possible_attrs
       end
     end
 
@@ -110,7 +110,7 @@ module MagicScopes::Base
     end
 
     def attrs_with_types
-      @attrs_with_types ||= attrs_list.inject({}) do |hsh, attr|
+      @attrs_with_types ||= all_possible_attrs.inject({}) do |hsh, attr|
         hsh[attr] = if reflections[attr]
             :association
           elsif (type = columns_hash[attr.to_s].try(:type)) && (!defined?(StateMachine) || !state_machines.keys.include?(attr))

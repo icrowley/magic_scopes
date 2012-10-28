@@ -16,7 +16,7 @@ describe MagicScopes do
       end
 
       it "does not define association scopes with non foreign column types" do
-        (subject.send(:attrs_list) - attrs).each do |attr|
+        (subject.send(:all_possible_attrs) - attrs).each do |attr|
           should_not respond_to("for_#{attr}")
           should_not respond_to("not_for_#{attr}")
         end

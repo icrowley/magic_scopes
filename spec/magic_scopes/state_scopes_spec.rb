@@ -6,24 +6,45 @@ describe MagicScopes do
 
     describe "generated scopes" do
       let(:attrs) { [:state, :likes_state] }
-      before { subject.magic_scopes(*attrs) }
 
-      it "defines all possible state scopes" do
-        attrs.each do |sm|
-          should respond_to("with_#{sm}")
-          should respond_to("without_#{sm}")
+      context "with generated attributes list" do
+        before { subject.magic_scopes }
 
-          subject.state_machines[sm].states.map(&:name).each do |state|
-            if state
-              should respond_to(state)
-              should respond_to("not_#{state}")
+        it "defines all possible state scopes" do
+          attrs.each do |sm|
+            should respond_to("with_#{sm}")
+            should respond_to("without_#{sm}")
+
+            subject.state_machines[sm].states.map(&:name).each do |state|
+              if state
+                should respond_to(state)
+                should respond_to("not_#{state}")
+              end
+            end
+          end
+        end
+      end
+
+      context "with state attributes passed" do
+        before { subject.magic_scopes(*attrs) }
+
+        it "defines all possible state scopes" do
+          attrs.each do |sm|
+            should respond_to("with_#{sm}")
+            should respond_to("without_#{sm}")
+
+            subject.state_machines[sm].states.map(&:name).each do |state|
+              if state
+                should respond_to(state)
+                should respond_to("not_#{state}")
+              end
             end
           end
         end
       end
 
       it "does not define state scopes if column is not state one" do
-        (subject.send(:attrs_list) - subject.send(:extract_states_from_attrs, attrs)).each do |attr|
+        (subject.send(:all_possible_attrs) - subject.send(:extract_states_from_attrs, attrs)).each do |attr|
           should_not respond_to(attr)
           should_not respond_to("not_#{attr}")
         end

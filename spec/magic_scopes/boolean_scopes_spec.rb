@@ -18,7 +18,7 @@ describe MagicScopes do
       end
 
       it "does not define boolean scopes with non boolean column types" do
-        (subject.send(:attrs_list) - attrs).each do |attr|
+        (subject.send(:all_possible_attrs) - attrs).each do |attr|
           should_not respond_to(attr)
           should_not respond_to("not_#{attr}")
           should_not respond_to("with_#{attr}")

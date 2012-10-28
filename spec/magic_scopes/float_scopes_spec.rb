@@ -24,7 +24,7 @@ describe MagicScopes do
       end
 
       it "does not define float scopes with non float column types" do
-        (subject.send(:attrs_list) - attrs).each do |attr|
+        (subject.send(:all_possible_attrs) - attrs).each do |attr|
           should_not respond_to("with_#{attr}")
           should_not respond_to("without_#{attr}")
           should_not respond_to("#{attr}_gt")

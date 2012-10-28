@@ -47,7 +47,7 @@ describe MagicScopes do
 
     describe "options" do
       it "uses all types of scopes unless in/ex options specified" do
-        subject.magic_scopes.keys.should == subject.send(:attrs_list)
+        subject.magic_scopes.keys.should == subject.send(:all_possible_attrs)
       end
 
       it "accepts arrays as arguments to options as well as symbols and strings" do
