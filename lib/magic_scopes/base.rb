@@ -21,8 +21,10 @@ module MagicScopes::Base
     def magic_scopes(*attrs)
       options = attrs.extract_options!.symbolize_keys
 
+      options.assert_valid_keys(*valid_options)
+
       if options[:std] && option = options[:std].find { |opt| self::STANDARD_SCOPES.exclude?(opt.to_sym) }
-        raise ArgumentError, "Unknown option #{option} passed to magic_scopes"
+        raise ArgumentError, "Unknown option #{option} passed to magic_scopes#std"
       end
 
       (options[:std] || self::STANDARD_SCOPES).each { |scope_type| send("#{scope_type}_scope") }
@@ -31,34 +33,33 @@ module MagicScopes::Base
         raise ArgumentError, "In(clude) and ex(clude) options can not be specified simultaneously"
       end
 
-      filters = options[:in] || options[:ex]
-      filters = Array.wrap(filters).map(&:to_sym) if filters
-
-      if filters && wrong_scope = filters.find { |scope_type| magic_scopes_list.exclude?(scope_type) }
-        raise ArgumentError, "Wrong scope #{wrong_scope} passed to magic_scopes"
+      passed_scope_types = options[:in] || options[:ex]
+      passed_scope_types = if passed_scope_types
+        passed_scope_types = Array.wrap(passed_scope_types).map(&:to_sym)
+        if wrong_scope = passed_scope_types.find { |scope_type| all_scope_types.exclude?(scope_type) }
+          raise ArgumentError, "Unknown scope #{wrong_scope} passed to magic_scopes"
+        end
+        passed_scope_types
       end
 
-      needed_scopes = if options[:in]
-          filters
-        elsif options[:ex]
-          magic_scopes_list - filters
-        else
-          magic_scopes_list
-        end
-
-      if attrs.empty?
-        attrs = all_possible_attrs
-      else
-        attrs = extract_states_from_attrs(attrs.map(&:to_sym))
-        if filters && wrong_scope = needed_scopes.find { |scope_type| attrs.any? { |attr| !has_scope_generator_for?(attr, scope_type) } }
-          raise ArgumentError, "Can not build scope #{wrong_scope} for all passed attributes"
-        end
-      end
-      if wrong_attr = attrs.find { |attr| all_possible_attrs.exclude?(attr) }
+      attributes = attrs.empty? ? all_possible_attrs : extract_states_from_attrs(attrs.map(&:to_sym))
+      if wrong_attr = attributes.find { |attr| all_possible_attrs.exclude?(attr) }
         raise ActiveRecord::UnknownAttributeError, "Unknown attribute #{wrong_attr} passed to magic_scopes"
       end
 
-      attrs.inject({}) do |hsh, attr|
+      needed_scopes = if options[:in]
+          passed_scope_types
+        elsif options[:ex]
+          all_scope_types(attributes) - passed_scope_types
+        else
+          all_scope_types
+        end
+
+      if passed_scope_types && !attrs.empty? && wrong_scope = needed_scopes.find { |scope_type| attributes.any? { |attr| !has_scope_generator_for?(attr, scope_type) } }
+        raise ArgumentError, "Can not build scope #{wrong_scope} for all passed attributes"
+      end
+
+      attributes.inject({}) do |hsh, attr|
         hsh[attr] = needed_scopes.inject([]) do |ar, scope_type|
           if has_scope_generator_for?(attr, scope_type)
             generate_scope_for(attr, scope_type)
@@ -71,6 +72,10 @@ module MagicScopes::Base
     end
 
     private
+
+    def valid_options
+      @valid_options ||= (%w(std in ex) + columns_hash.keys + reflections.keys).map(&:to_sym)
+    end
 
     def generate_scope_for(attr, scope_type)
       type = type_for_attr(attr)
@@ -85,16 +90,18 @@ module MagicScopes::Base
       attrs_with_types[attr]
     end
 
-    def magic_scopes_list
-      @magic_scopes_list ||= MAGIC_SCOPES.values.flatten.uniq
+    def all_scope_types(attrs = nil)
+      filtered_scopes = unless attrs
+          MAGIC_SCOPES
+        else
+          needed_types = attrs.map { |attr| attrs_with_types[attr] }
+          MAGIC_SCOPES.select { |k, _| k.in?(needed_types)  }
+        end
+      filtered_scopes.values.flatten.uniq
     end
 
     def all_possible_attrs
-      @all_possible_attrs ||= begin
-        all_possible_attrs = columns_hash.keys.map(&:to_sym) + reflections.keys
-        all_possible_attrs = extract_states_from_attrs(all_possible_attrs)
-        all_possible_attrs
-      end
+      @all_possible_attrs ||= all_possible_attrs = extract_states_from_attrs(columns_hash.keys.map(&:to_sym) + reflections.keys)
     end
 
     def extract_states_from_attrs(attrs)
