@@ -34,8 +34,8 @@ module MagicScopes::Base
       filters = options[:in] || options[:ex]
       filters = Array.wrap(filters).map(&:to_sym) if filters
 
-      if filters && !filters.all? { |scope_type| scope_type.in?(magic_scopes_list) }
-        raise ArgumentError, "Wrong scope passed to magic_scopes"
+      if filters && wrong_scope = filters.find { |scope_type| magic_scopes_list.exclude?(scope_type) }
+        raise ArgumentError, "Wrong scope #{wrong_scope} passed to magic_scopes"
       end
 
       needed_scopes = if options[:in]
@@ -50,12 +50,12 @@ module MagicScopes::Base
         attrs = attrs_list
       else
         attrs = extract_states_from_attrs(attrs.map(&:to_sym))
-        if filters && needed_scopes.any? { |scope_type| attrs.any? { |attr| !has_scope_generator_for?(attr, scope_type) } }
-          raise ArgumentError, "Can not build scopes for all passed attributes"
+        if filters && wrong_scope = needed_scopes.find { |scope_type| attrs.any? { |attr| !has_scope_generator_for?(attr, scope_type) } }
+          raise ArgumentError, "Can not build scope #{wrong_scope} for all passed attributes"
         end
       end
-      unless attrs.all? { |attr| attr.in?(attrs_list) }
-        raise ActiveRecord::UnknownAttributeError, "Unknown attribute passed to magic_scopes"
+      if wrong_attr = attrs.find { |attr| attrs_list.exclude?(attr) }
+        raise ActiveRecord::UnknownAttributeError, "Unknown attribute #{wrong_attr} passed to magic_scopes"
       end
 
       attrs.inject({}) do |hsh, attr|
