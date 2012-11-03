@@ -56,6 +56,11 @@ describe MagicScopes do
         it "returns 2 for like" do
           subject.email_like('example.org').count.should == 2
         end
+
+        it "accepts multiple arguments for like scopes" do
+          subject.create(email: 'bogus@bogus.org')
+          subject.email_like('test@example.org', 'bogus.org').count.should == 2
+        end
       end
 
       context "about" do
