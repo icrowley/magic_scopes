@@ -7,10 +7,10 @@ require "magic_scopes/version"
 Gem::Specification.new do |s|
   s.name        = "magic_scopes"
   s.version     = MagicScopes::VERSION
-  s.authors     = ["Some scopes generators"]
+  s.authors     = ["Dmitry Afanasyev"]
   s.email       = ["dimarzio1986@gmail.com"]
-  s.homepage    = "https://github.com/icrowley"
-  description   = "Some scopes generators"
+  s.homepage    = "http://github.com/icrowley"
+  description   = "ActiveRecord scopes generators"
   s.summary     = description
   s.description = description
 
