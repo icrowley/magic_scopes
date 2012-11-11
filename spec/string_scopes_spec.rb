@@ -16,6 +16,8 @@ describe MagicScopes do
           should respond_to("#{attr}_eq")
           should respond_to("#{attr}_like")
           should respond_to("#{attr}_ilike")
+          should respond_to("#{attr}_not_like")
+          should respond_to("#{attr}_not_ilike")
           should respond_to("#{attr}_ne")
           should respond_to("by_#{attr}")
           should respond_to("by_#{attr}_desc")
@@ -29,6 +31,8 @@ describe MagicScopes do
           should_not respond_to("#{attr}_eq")
           should_not respond_to("#{attr}_like")
           should_not respond_to("#{attr}_ilike")
+          should_not respond_to("#{attr}_not_like")
+          should_not respond_to("#{attr}_not_ilike")
           should_not respond_to("#{attr}_ne")
           should_not respond_to("by_#{attr}")
           should_not respond_to("by_#{attr}_desc")
@@ -57,9 +61,20 @@ describe MagicScopes do
           subject.email_like('example.org').count.should == 2
         end
 
+        it "returns 1 for not like" do
+          subject.create(email: 'bogus@bogus.org')
+          subject.email_not_like('example.org').count.should == 1
+        end
+
         it "accepts multiple arguments for like scopes" do
           subject.create(email: 'bogus@bogus.org')
           subject.email_like('test@example.org', 'bogus.org').count.should == 2
+        end
+
+        it "accepts multiple arguments for not like scopes" do
+          subject.create(email: 'bogus@bogus.org')
+          subject.create(email: 'bogus@example.org')
+          subject.email_not_like('test@example.org', 'bogus.org').count.should == 2
         end
       end
 
@@ -90,6 +105,20 @@ describe MagicScopes do
 
         it "returns 2 for ilike" do
           subject.about_ilike('lorem').count.should == 2
+        end
+
+        it "returns 0 for not ilike" do
+          subject.about_not_ilike('lorem').count.should == 0
+        end
+
+        it "accetps multiple arguments for like" do
+          subject.create(about: 'bogus')
+          subject.about_ilike('lorem', 'bogus').count.should == 3
+        end
+
+        it "accepts multiple arguments for not ilike" do
+          subject.create(about: 'bogus')
+          subject.about_not_ilike('lorem', 'Bogus').count.should == 1
         end
 
         it "returns 1 for ne" do

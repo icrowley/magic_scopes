@@ -9,7 +9,7 @@ module MagicScopes
       boolean:     [:is, :not, :with, :without],
       integer:     [:with, :without, :eq, :ne, :gt, :gte, :lt, :lte, :by, :by_desc],
       float:       [:with, :without, :lt, :gt, :by, :by_desc],
-      string:      [:with, :without, :eq, :ne, :by, :by_desc, :like, :ilike],
+      string:      [:with, :without, :eq, :ne, :by, :by_desc, :like, :not_like, :ilike, :not_ilike],
       association: [:for, :not_for]
     }
     MAGIC_SCOPES[:state]   = MAGIC_SCOPES[:boolean]
