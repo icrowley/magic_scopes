@@ -4,20 +4,20 @@ module MagicScopes
     include EqualityScopes
     include OrderScopes
 
-    def like
-      scope "#{@attr}_like", ->(*vals) { where(build_query(*vals, "#{@key} LIKE ?", 'OR')) }
+    def like(name)
+      scope name || "#{@attr}_like", ->(*vals) { where(build_query(*vals, "#{@key} LIKE ?", 'OR')) }
     end
 
-    def not_like
-      scope "#{@attr}_not_like", ->(*vals) { where(build_query(*vals, "#{@key} NOT LIKE ?", 'AND')) }
+    def not_like(name)
+      scope name || "#{@attr}_not_like", ->(*vals) { where(build_query(*vals, "#{@key} NOT LIKE ?", 'AND')) }
     end
 
-    def ilike
-      scope "#{@attr}_ilike", ilike_scope
+    def ilike(name)
+      scope name || "#{@attr}_ilike", ilike_scope
     end
 
-    def not_ilike
-      scope "#{@attr}_not_ilike", ilike_scope('NOT')
+    def not_ilike(name)
+      scope name || "#{@attr}_not_ilike", ilike_scope('NOT')
     end
 
     private

@@ -1,11 +1,11 @@
 module MagicScopes
   module OrderScopes
-    def by
-      scope "by_#{@attr}", order("#{@attr} ASC")
+    def by(name)
+      scope name || "by_#{@attr}", order("#{@attr} ASC")
     end
 
-    def by_desc
-      scope "by_#{@attr}_desc", order("#{@attr} DESC")
+    def by_desc(name)
+      scope name || "by_#{@attr}_desc", order("#{@attr} DESC")
     end
   end
 end

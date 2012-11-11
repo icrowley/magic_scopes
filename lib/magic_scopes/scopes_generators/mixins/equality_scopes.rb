@@ -1,19 +1,19 @@
 module MagicScopes
   module EqualityScopes
-    def with
-      scope "with_#{@attr}", eq_scope
+    def with(name)
+      scope name || "with_#{@attr}", eq_scope
     end
 
-    def eq
-      scope "#{@attr}_eq", eq_scope
+    def eq(name)
+      scope name || "#{@attr}_eq", eq_scope
     end
 
-    def without
-      scope "without_#{@attr}", where("#{@key} IS NULL")
+    def without(name)
+      scope name || "without_#{@attr}", where("#{@key} IS NULL")
     end
 
-    def ne
-      scope "#{@attr}_ne", ->(*vals) {
+    def ne(name)
+      scope name || "#{@attr}_ne", ->(*vals) {
         raise ArgumentError, "No argument for for_#{@attr} scope" if vals.empty?
         sql = "#{@key} " << (vals.size == 1 && !vals[0].is_a?(Array) ? '!= ?' : 'NOT IN (?)') << " OR #{@key} IS NULL"
         where(sql, vals.flatten)

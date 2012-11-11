@@ -159,6 +159,18 @@ describe MagicScopes do
           end
         end
 
+        it "creates scopes with their own names if they are passed" do
+          subject.magic_scopes(rating: %w(gt lt), title: {with: :titled}, content: {like: :has_content, not_like: 'has_not_content'})
+          should respond_to(:rating_gt)
+          should respond_to(:rating_lt)
+          should respond_to(:titled)
+          should_not respond_to(:with_title)
+          should respond_to(:has_content)
+          should_not respond_to(:content_like)
+          should respond_to(:has_not_content)
+          should_not respond_to(:content_not_like)
+        end
+
         context "without in or ex option specified" do
           before { subject.magic_scopes(title: %w(with eq)) }
 

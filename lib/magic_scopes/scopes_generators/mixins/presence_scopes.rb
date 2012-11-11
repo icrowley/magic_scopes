@@ -1,11 +1,11 @@
 module MagicScopes
   module PresenceScopes
-    def with
-      scope "with_#{@attr}", where("#{@key} IS NOT NULL")
+    def with(name)
+      scope name || "with_#{@attr}", where("#{@key} IS NOT NULL")
     end
 
-    def without
-      scope "without_#{@attr}", where("#{@key} IS NULL")
+    def without(name)
+      scope name || "without_#{@attr}", where("#{@key} IS NULL")
     end
   end
 end

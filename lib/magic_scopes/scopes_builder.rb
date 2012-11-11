@@ -42,10 +42,11 @@ module MagicScopes
     private
 
     def generate_scopes_for_attr(attr, scopes)
-      scopes.inject([]) do |ar, scope_type|
-        if has_scope_generator_for?(attr, scope_type)
-          generate_scope_for(attr, scope_type)
-          ar << scope_type
+      scopes.inject([]) do |ar, scope_info|
+        scope_info = Array.wrap(scope_info)
+        if has_scope_generator_for?(attr, scope_info[0])
+          generate_scope_for(attr, scope_info[0], scope_info[1] != scope_info[0] ? scope_info[1] : nil)
+          ar << scope_info[0]
         end
         ar
       end
@@ -65,14 +66,20 @@ module MagicScopes
 
     def extract_attributes_with_scopes
       attributes_with_scopes = @options.inject({}) do |hsh, (option_key, options)|
-        hsh[option_key] = Array.wrap(@options.delete(option_key)).map(&:to_sym) unless option_key.in?(STANDARD_OPTIONS)
+        unless option_key.in?(STANDARD_OPTIONS)
+          hsh[option_key] = unless options.is_a?(Hash)
+              Array.wrap(@options.delete(option_key)).inject({}) { |hsh, option| hsh[option.to_sym] = option.to_sym; hsh }
+            else
+              options
+            end
+        end
         hsh
       end
       extract_states_from_attrs!(attributes_with_scopes)
 
       wrong_scope = nil
-      if wrong_attr = attributes_with_scopes.find do |attr, attr_scopes|
-        wrong_scope = attr_scopes.find { |st| scope_types(attr).exclude?(st.to_sym) }
+      if wrong_attr = attributes_with_scopes.find do |attr, scopes_hash|
+        wrong_scope = scopes_hash.find { |scope_type, _| scope_types(attr).exclude?(scope_type.to_sym) }
       end
         raise ArgumentError, "Unknown scope #{wrong_scope} for attribute #{wrong_attr[0]} passed to magic_scopes"
       end
@@ -139,9 +146,9 @@ module MagicScopes
       scopes.find { |scope_type| @attributes.any? { |attr| !has_scope_generator_for?(attr, scope_type) } }
     end
 
-    def generate_scope_for(attr, scope_type)
+    def generate_scope_for(attr, scope_type, scope_name = nil)
       type = type_for_attr(attr)
-      "MagicScopes::#{type.to_s.classify}ScopesGenerator".constantize.instance(@model, attr).send(scope_type)
+      "MagicScopes::#{type.to_s.classify}ScopesGenerator".constantize.instance(@model, attr).send(scope_type, scope_name)
     end
 
     def has_scope_generator_for?(attr, scope_type)

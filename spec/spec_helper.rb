@@ -17,7 +17,7 @@ RSpec.configure do |config|
     [User, Comment].each do |model|
       MagicScopes::ScopesBuilder.new(model).send(:all_possible_attributes).each do |arg|
         model.undef_meth(arg) if model.respond_to?(arg)
-        %w(eq gt lt gte lte ne like ilike).each do |postfix|
+        %w(eq gt lt gte lte ne like not_like ilike not_ilike).each do |postfix|
           m = "#{arg}_#{postfix}"
           model.undef_meth(m) if model.respond_to?(m)
         end

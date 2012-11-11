@@ -5,12 +5,12 @@ module MagicScopes
     include OrderScopes
     include ComparisonScopes
 
-    def gte
-      scope "#{@attr}_gte", ->(val) { where("#{@key} >= ?", val) }
+    def gte(name)
+      scope name || "#{@attr}_gte", ->(val) { where("#{@key} >= ?", val) }
     end
 
-    def lte
-      scope "#{@attr}_lte", ->(val) { where("#{@key} <= ?", val) }
+    def lte(name)
+      scope name || "#{@attr}_lte", ->(val) { where("#{@key} <= ?", val) }
     end
 
   end

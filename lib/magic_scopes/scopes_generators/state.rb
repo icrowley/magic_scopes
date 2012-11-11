@@ -7,22 +7,22 @@ if defined?(StateMachine)
         @key   = "#{model.table_name}.#{attr}"
       end
 
-      def is
-        scope @state, where("#{@key}" => @state)
+      def is(name)
+        scope name || @state, where("#{@key}" => @state)
       end
 
-      def not
-        scope "not_#{@state}", where("#{@key} != ? OR #{@key} IS NULL", @state)
+      def not(name)
+        scope name || "not_#{@state}", where("#{@key} != ? OR #{@key} IS NULL", @state)
       end
 
-      def with
+      def with(name)
         @model.instance_eval("undef :with_#{attr}")
-        scope "with_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NOT NULL" : ["#{@key} IN (?)", vals]) }
+        scope name || "with_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NOT NULL" : ["#{@key} IN (?)", vals]) }
       end
 
-      def without
+      def without(name)
         @model.instance_eval("undef :without_#{attr}")
-        scope "without_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NULL" : ["#{@key} NOT IN (?)", vals]) }
+        scope name || "without_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NULL" : ["#{@key} NOT IN (?)", vals]) }
       end
 
       private

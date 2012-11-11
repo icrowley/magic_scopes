@@ -9,32 +9,32 @@ module MagicScopes
       @type_key = "#{model.table_name}.#{attr}_type"
     end
 
-    def for
+    def for(name)
       if @model.reflections[@attr].options[:polymorphic]
-        scope "for_#{@attr}", ->(*vals) {
+        scope name || "for_#{@attr}", ->(*vals) {
           raise ArgumentError, "No argument for for_#{@attr} scope" if vals.empty?
           ids_and_types = vals.map { |v| extract_ids_and_types(v, @attr) }.flatten
           conditions = ids_and_types.map { |hsh| "(#{@key} = ? AND #{@type_key} = ?)" }.join(' OR ')
           where(conditions, *ids_and_types.map(&:values).flatten)
         }
       else
-        scope "for_#{@attr}", ->(*vals) {
+        scope name || "for_#{@attr}", ->(*vals) {
           raise ArgumentError, "No argument for for_#{@attr} scope" if vals.empty?
           where(@key => vals.map { |v| extract_ids(v, @attr) }.flatten )
         }
       end
     end
 
-    def not_for
+    def not_for(name)
       if @model.reflections[@attr.to_sym].options[:polymorphic]
-        scope "not_for_#{@attr}", ->(*vals) {
+        scope name || "not_for_#{@attr}", ->(*vals) {
           raise ArgumentError, "No argument for for_#{@attr} scope" if vals.empty?
           ids_and_types = vals.map { |v| extract_ids_and_types(v, @attr) }.flatten
           conditions = ids_and_types.map { |hsh| "(#{@key} != ? AND #{@type_key} != ?)" }.join(' AND ')
           where("#{conditions} OR (#{@key} IS NULL OR #{@type_key} IS NULL)", *ids_and_types.map(&:values).flatten)
         }
       else
-        scope "not_for_#{@attr}", ->(*vals) {
+        scope name || "not_for_#{@attr}", ->(*vals) {
           raise ArgumentError, "No argument for for_#{@attr} scope" if vals.empty?
           ids = vals.map { |v| extract_ids(v, @attr) }.flatten
           conditions = ids.size == 1 ? "!= ?" : "NOT IN (?)"
