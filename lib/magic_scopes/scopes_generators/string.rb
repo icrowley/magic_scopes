@@ -35,6 +35,4 @@ module MagicScopes
       @model.connection.adapter_name == 'PostgreSQL'
     end
   end
-
-  TextScopesGenerator = StringScopesGenerator
 end

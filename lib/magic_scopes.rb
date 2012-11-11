@@ -6,11 +6,12 @@ require 'magic_scopes/scopes_generators/mixins/equality_scopes'
 require 'magic_scopes/scopes_generators/mixins/presence_scopes'
 require 'magic_scopes/scopes_generators/base'
 require 'magic_scopes/scopes_generators/boolean'
-require 'magic_scopes/scopes_generators/integer'
+require 'magic_scopes/scopes_generators/numeric'
 require 'magic_scopes/scopes_generators/string'
 require 'magic_scopes/scopes_generators/float'
 require 'magic_scopes/scopes_generators/association'
 require 'magic_scopes/scopes_generators/state'
+require 'magic_scopes/scopes_generators/compat'
 require 'magic_scopes/version'
 require 'magic_scopes/railtie' if defined?(Rails)
 

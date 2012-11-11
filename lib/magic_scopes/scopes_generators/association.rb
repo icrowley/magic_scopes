@@ -51,7 +51,7 @@ module MagicScopes
         val
       elsif val.is_a?(ActiveRecord::Base)
         val.id
-      elsif val.is_a?(Array) && val.all? { |v| v.is_a?(Fixnum) || (v.is_a?(String) && v.to_i != 0) || v.is_a?(ActiveRecord::Base) }
+      elsif val.is_a?(Array) && val.all? { |v| v.is_a?(Integer) || (v.is_a?(String) && v.to_i != 0) || v.is_a?(ActiveRecord::Base) }
         val.is_a?(ActiveRecord::Base) ? val.map(&:id) : val
       else
         raise ArgumentError, "Wrong argument type #{attr.class.name} for argument #{attr}"

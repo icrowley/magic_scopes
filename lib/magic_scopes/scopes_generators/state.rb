@@ -16,12 +16,12 @@ if defined?(StateMachine)
       end
 
       def with(name)
-        @model.instance_eval("undef :with_#{attr}")
+        @model.instance_eval("undef :with_#{attr}") unless name
         scope name || "with_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NOT NULL" : ["#{@key} IN (?)", vals]) }
       end
 
       def without(name)
-        @model.instance_eval("undef :without_#{attr}")
+        @model.instance_eval("undef :without_#{attr}") unless name
         scope name || "without_#{@attr}", ->(*vals) { where(vals.empty? ? "#{@key} IS NULL" : ["#{@key} NOT IN (?)", vals]) }
       end
 

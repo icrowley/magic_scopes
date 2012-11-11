@@ -13,12 +13,8 @@ module MagicScopes
       end
 
       def self.instance(model, attr)
-        if @@instances[model.name].try(:has_key?, attr)
-          @@instances[model.name][attr]
-        else
-          @@instances[model.name] ||= {}
-          @@instances[model.name][attr] = new(model, attr)
-        end
+        @@instances[model.name] ||= {}
+        @@instances[model.name][attr] ||= new(model, attr)
       end
 
       delegate :scope, :where, :order, to: :@model

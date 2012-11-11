@@ -33,13 +33,18 @@ module MagicScopes
     end
 
     def generate_scopes
-      @attributes.inject({}) { |hsh, attr| hsh[attr] = generate_scopes_for_attr(attr, @needed_scopes); hsh }.merge(
-        @attributes_with_scopes.inject({}) { |hsh, (attr, attr_scopes)| hsh[attr] = generate_scopes_for_attr(attr, attr_scopes); hsh }
-      )
+      generate_explicitly_passed_scopes.merge(generate_implicitly_specified_scopes)
     end
 
-
     private
+
+    def generate_implicitly_specified_scopes
+      @attributes.inject({}) { |hsh, attr| hsh[attr] = generate_scopes_for_attr(attr, @needed_scopes); hsh }
+    end
+
+    def generate_explicitly_passed_scopes
+      @attributes_with_scopes.inject({}) { |hsh, (attr, attr_scopes)| hsh[attr] = generate_scopes_for_attr(attr, attr_scopes); hsh }
+    end
 
     def generate_scopes_for_attr(attr, scopes)
       scopes.inject([]) do |ar, scope_info|
