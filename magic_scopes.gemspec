@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.summary     = description
   s.description = description
 
-  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.md"]
 
   s.add_dependency "activerecord", "~> 3.2"
   s.add_dependency "activesupport", "~> 3.2"
