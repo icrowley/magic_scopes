@@ -9,7 +9,7 @@ module MagicScopes
     end
 
     def without(name)
-      scope name || "without_#{@attr}", where("#{@key} IS NULL")
+      scope name || "without_#{@attr}", -> { where("#{@key} IS NULL") }
     end
 
     def ne(name)

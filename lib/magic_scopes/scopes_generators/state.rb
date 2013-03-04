@@ -8,11 +8,11 @@ if defined?(StateMachine)
       end
 
       def is(name)
-        scope name || @state, where("#{@key}" => @state)
+        scope name || @state, -> { where("#{@key}" => @state) }
       end
 
       def not(name)
-        scope name || "not_#{@state}", where("#{@key} != ? OR #{@key} IS NULL", @state)
+        scope name || "not_#{@state}", -> { where("#{@key} != ? OR #{@key} IS NULL", @state) }
       end
 
       def with(name)

@@ -9,23 +9,23 @@ module MagicScopes
     private
 
     def asc_scope
-      scope :asc, order(:id)
+      scope :asc, -> { order(:id) }
     end
 
     def sorted_scope
-      scope :sorted, order(:id)
+      scope :sorted, -> { order(:id) }
     end
 
     def desc_scope
-      scope :desc,  order('id DESC')
+      scope :desc,  -> { order('id DESC') }
     end
 
     def recent_scope
-      scope :recent, order('id DESC')
+      scope :recent, -> { order('id DESC') }
     end
 
     def random_scope
-      scope :random, order('RANDOM()')
+      scope :random, -> { order('RANDOM()') }
     end
   end
 end

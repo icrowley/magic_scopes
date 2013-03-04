@@ -4,11 +4,11 @@ module MagicScopes
     include PresenceScopes
 
     def is(name)
-      scope name || @attr, where("#{@key}" => true)
+      scope name || @attr, -> { where("#{@key}" => true) }
     end
 
     def not(name)
-      scope name || "not_#{@attr}", where("#{@key}" => [false, nil])
+      scope name || "not_#{@attr}", -> { where("#{@key}" => [false, nil]) }
     end
   end
 end
