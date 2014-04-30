@@ -1,7 +1,5 @@
 class Comment < ActiveRecord::Base
 
-  attr_protected
-
   belongs_to :user
   belongs_to :commentable, polymorphic: true
   belongs_to :next

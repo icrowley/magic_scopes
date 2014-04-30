@@ -1,5 +1,4 @@
 class User < ActiveRecord::Base
-  attr_protected
 
   belongs_to :ref
   belongs_to :specable, polymorphic: true

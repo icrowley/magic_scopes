@@ -114,7 +114,7 @@ module MagicScopes
         end
 
       if wrong_attr = attributes.find { |attr| all_possible_attributes.exclude?(attr) }
-        raise ActiveRecord::UnknownAttributeError, "Unknown attribute #{wrong_attr} passed to magic_scopes"
+        raise ActiveRecord::UnknownAttributeError.new("Unknown attribute #{wrong_attr} passed to magic_scopes", wrong_attr)
       end
       if attr = attributes.find { |attr| @attributes_with_scopes.keys.include?(attr) }
         raise ArgumentError, "Attribute #{attr} specified using both list and hash"
